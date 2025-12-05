@@ -10,9 +10,21 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
+#include "imgui.h"
 
+// HackFIX1337boi
+#ifndef strncpy_s
 
+typedef int errno_t;
+typedef size_t rsize_t;
 
+errno_t strncpy_s(char *__restrict__dest, rsize_t destsz,
+                            const char *__restrict__src, rsize_t count)
+{
+    return !strncpy(__restrict__dest, __restrict__src, (destsz>count)?count:destsz);
+}
+
+#endif
 
 const GLchar* vs =
 "#version 430\n"
@@ -89,6 +101,15 @@ namespace Example
 		{
 			// set clear color to gray
 			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+			this->window->SetUiRender([this]()
+		{
+			this->renderUI();
+		});
+		this->window->SetNanoVGRender([this](NVGcontext * vg)
+		{
+			this->renderNano(vg);
+		});
 			
 		}
 		return true;
@@ -131,7 +152,7 @@ namespace Example
 
 
 		pointLightMesh->loadObj("./resources/cube2.obj");
-		objectMesh->loadObj("./resources/cube2.obj");
+		objectMesh->loadGLTF("./resources/cube.gltf");
 
 		lightCube.setMesh(pointLightMesh);
 		lightCube.setShader(pointLightShader);
@@ -144,7 +165,7 @@ namespace Example
 		gn.setShader(lightShader);
 		gn.setTexture(texPtr);
 		gn.setNormalMap(normalMapPtr);
-		gn.initTexture("./resources/container2fixed.png");
+		gn.initTexture("");
 		gn.setTransform(Matrix4D());
 
 		// gn2.setMesh(objectMesh);
@@ -378,4 +399,45 @@ namespace Example
 		//gn2.clearMemory();
 		glfwTerminate();
 	}
+void ExampleApp::renderUI() {
+	static float f = 0.0f;
+	static int counter = 0;
+	bool show_demo_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+	ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+	ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+	ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+	ImGui::Checkbox("Another Window", &show_another_window);
+
+	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+	ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+	if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+		counter++;
+	ImGui::SameLine();
+	ImGui::Text("counter = %d", counter);
+	ImGui::End();
+
+
+}
+
+void ExampleApp::renderNano(NVGcontext * vg)
+{
+	
+	
+	nvgSave(vg);
+
+	nvgBeginPath(vg);
+	nvgCircle(vg,600, 100, 50);
+	NVGpaint paint;
+	paint = nvgLinearGradient(vg, 600, 100, 650, 150, nvgRGBA(255, 0, 0, 255), nvgRGBA(0, 255, 0, 255));
+	nvgFillPaint(vg, paint);
+	nvgFill(vg);
+	
+
+	nvgRestore(vg);
+}
 }// namespace Example

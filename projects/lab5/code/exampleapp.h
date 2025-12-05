@@ -30,7 +30,11 @@ public:
 	bool Open();
 	/// run app
 	void Run();
-private:
+	private:
+	
+	void renderUI();
+
+	void renderNano(NVGcontext * vg);
 
 	GLuint program;
 	GLuint vertexShader;

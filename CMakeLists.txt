@@ -1,7 +1,7 @@
 #--------------------------------------------------------------------------
 # gscept laboration environment
 #--------------------------------------------------------------------------
-CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
 PROJECT(gscept_lab_env)
 
 MACRO(TARGET_PCH target path)
