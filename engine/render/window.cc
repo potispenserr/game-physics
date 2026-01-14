@@ -311,7 +311,7 @@ void Window::SetInputMode(int mode) {
 	glfwSetInputMode(window, GLFW_CURSOR, mode);
 }
 
-void Window::SetCursorPosition(double* xPos, double* yPos) {
+void Window::GetCursorPosition(double* xPos, double* yPos) {
 	glfwGetCursorPos(window, xPos, yPos);
 }
 

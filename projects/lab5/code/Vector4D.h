@@ -55,6 +55,8 @@ public:
 	float&  z() { return vecarray[2]; }
 	float&  w() { return vecarray[3]; }
 
+	float* getVector() { return vecarray; }
+
 	///
 	///setters
 	///

@@ -2,6 +2,7 @@
 #include "Vector4D.h"
 #include "math.h"
 #include <iostream>
+#include <functional>
 ///
 ///\copyright{
 ///This file is part of Lab 1.
@@ -116,6 +117,12 @@ public:
 		}
 		return mxarr[i][j];
 	}
+	float get(int i) {
+		int row = i / 4;
+		int col = i % 4;
+		
+		return mxarr[row][col];
+	}
 
 	float x() {
 		return mxarr[0][3];
@@ -135,6 +142,12 @@ public:
 			throw std::out_of_range("Index out of range");
 		}
 		mxarr[i][j] = val;
+	}
+	void set(int i, float val) {
+			int row = i / 4;
+			int col = i % 4;
+			mxarr[row][col] = val;
+		
 	}
 
 
@@ -269,136 +282,93 @@ public:
 		m = transp;
 	}
 
-	///Inverts matrix, calculates determinant and assigns the inverse by reference
+	///Inverts matrix using Cramer's rule and returns the inverse. Code borrowed from an Intel publication
 	///Throws an exception if determinant is 0
-	void invert(Matrix4D& m) {
-		Matrix4D inv;
-		inv.mxarr[0][0] = m.mxarr[1][1] * m.mxarr[2][2] * m.mxarr[3][3] -
-			m.mxarr[1][1] * m.mxarr[2][3] * m.mxarr[3][2] -
-			m.mxarr[2][1] * m.mxarr[1][2] * m.mxarr[3][3] +
-			m.mxarr[2][1] * m.mxarr[1][3] * m.mxarr[3][2] +
-			m.mxarr[3][1] * m.mxarr[1][2] * m.mxarr[2][3] -
-			m.mxarr[3][1] * m.mxarr[1][3] * m.mxarr[2][2];
+	static Matrix4D invert(Matrix4D& m) {
+		Matrix4D invert;
+		double temp[12];
+		double determinant;
+		m.transpose(m);
 
-		inv.mxarr[1][0] = -m.mxarr[1][0] * m.mxarr[2][2] * m.mxarr[3][3] +
-			m.mxarr[1][0] * m.mxarr[2][3] * m.mxarr[3][2] +
-			m.mxarr[2][0] * m.mxarr[1][2] * m.mxarr[3][3] -
-			m.mxarr[2][0] * m.mxarr[1][3] * m.mxarr[3][2] -
-			m.mxarr[3][3] * m.mxarr[1][2] * m.mxarr[2][3] +
-			m.mxarr[3][0] * m.mxarr[1][3] * m.mxarr[2][2];
+		// calculate pairs for the first 8 elements
+		temp[0] = m.get(10) * m.get(15);
+		temp[1] = m.get(11) * m.get(14);
+		temp[2] = m.get(9) * m.get(15);
+		temp[3] = m.get(11) * m.get(13);
+		temp[4] = m.get(9) * m.get(14);
+		temp[5] = m.get(10) * m.get(13);
+		temp[6] = m.get(8) * m.get(15);
+		temp[7] = m.get(11) * m.get(12);
+		temp[8] = m.get(8) * m.get(14);
+		temp[9] = m.get(10) * m.get(12);
+		temp[10] = m.get(8) * m.get(13);
+		temp[11] = m.get(9) * m.get(12);
+		// calculate the first 8 elements
+		invert[0][0] = temp[0] * m.get(5) + temp[3] * m.get(6) + temp[4] * m.get(7);
+		invert[0][0] -= temp[1] * m.get(5) + temp[2] * m.get(6) + temp[5] * m.get(7);
+		invert[0][1] = temp[1] * m.get(4) + temp[6] * m.get(6) + temp[9] * m.get(7);
+		invert[0][1] -= temp[0] * m.get(4) + temp[7] * m.get(6) + temp[8] * m.get(7);
+		invert[0][2] = temp[2] * m.get(4) + temp[7] * m.get(5) + temp[10] * m.get(7);
+		invert[0][2] -= temp[3] * m.get(4) + temp[6] * m.get(5) + temp[11] * m.get(7);
+		invert[0][3] = temp[5] * m.get(4) + temp[8] * m.get(5) + temp[11] * m.get(6);
+		invert[0][3] -= temp[4] * m.get(4) + temp[9] * m.get(5) + temp[10] * m.get(6);
+		invert[1][0] = temp[1] * m.get(1) + temp[2] * m.get(2) + temp[5] * m.get(3);
+		invert[1][0] -= temp[0] * m.get(1) + temp[3] * m.get(2) + temp[4] * m.get(3);
+		invert[1][1] = temp[0] * m.get(0) + temp[7] * m.get(2) + temp[8] * m.get(3);
+		invert[1][1] -= temp[1] * m.get(0) + temp[6] * m.get(2) + temp[9] * m.get(3);
+		invert[1][2] = temp[3] * m.get(0) + temp[6] * m.get(1) + temp[11] * m.get(3);
+		invert[1][2] -= temp[2] * m.get(0) + temp[7] * m.get(1) + temp[10] * m.get(3);
+		invert[1][3] = temp[4] * m.get(0) + temp[9] * m.get(1) + temp[10] * m.get(2);
+		invert[1][3] -= temp[5] * m.get(0) + temp[8] * m.get(1) + temp[11] * m.get(2);
+		// calculate pairs for the second 8 elements
+		temp[0] = m.get(2) * m.get(7);
+		temp[1] = m.get(3) * m.get(6);
+		temp[2] = m.get(1) * m.get(7);
+		temp[3] = m.get(3) * m.get(5);
+		temp[4] = m.get(1) * m.get(6);
+		temp[5] = m.get(2) * m.get(5);
 
-		inv.mxarr[2][0] = m.mxarr[1][0] * m.mxarr[2][1] * m.mxarr[3][3] -
-			m.mxarr[1][0] * m.mxarr[2][3] * m.mxarr[3][1] -
-			m.mxarr[2][0] * m.mxarr[1][1] * m.mxarr[3][3] +
-			m.mxarr[2][0] * m.mxarr[1][3] * m.mxarr[3][1] +
-			m.mxarr[3][0] * m.mxarr[1][1] * m.mxarr[2][3] -
-			m.mxarr[3][0] * m.mxarr[1][3] * m.mxarr[2][1];
+		temp[6] = m.get(0) * m.get(7);
+		temp[7] = m.get(3) * m.get(4);
+		temp[8] = m.get(0) * m.get(6);
+		temp[9] = m.get(2) * m.get(4);
+		temp[10] = m.get(0) * m.get(5);
+		temp[11] = m.get(1) * m.get(4);
+		// calculate the second 8 elements
+		invert[2][0] = temp[0] * m.get(13) + temp[3] * m.get(14) + temp[4] * m.get(15);
+		invert[2][0] -= temp[1] * m.get(13) + temp[2] * m.get(14) + temp[5] * m.get(15);
+		invert[2][1] = temp[1] * m.get(12) + temp[6] * m.get(14) + temp[9] * m.get(15);
+		invert[2][1] -= temp[0] * m.get(12) + temp[7] * m.get(14) + temp[8] * m.get(15);
+		invert[2][2] = temp[2] * m.get(12) + temp[7] * m.get(13) + temp[10] * m.get(15);
+		invert[2][2] -= temp[3] * m.get(12) + temp[6] * m.get(13) + temp[11] * m.get(15);
+		invert[2][3] = temp[5] * m.get(12) + temp[8] * m.get(13) + temp[11] * m.get(14);
+		invert[2][3] -= temp[4] * m.get(12) + temp[9] * m.get(13) + temp[10] * m.get(14);
+		invert[3][0] = temp[2] * m.get(10) + temp[5] * m.get(11) + temp[1] * m.get(9);
+		invert[3][0] -= temp[4] * m.get(11) + temp[0] * m.get(9) + temp[3] * m.get(10);
+		invert[3][1] = temp[8] * m.get(11) + temp[0] * m.get(8) + temp[7] * m.get(10);
+		invert[3][1] -= temp[6] * m.get(10) + temp[9] * m.get(11) + temp[1] * m.get(8);
+		invert[3][2] = temp[6] * m.get(9) + temp[11] * m.get(11) + temp[3] * m.get(8);
+		invert[3][2] -= temp[10] * m.get(11) + temp[2] * m.get(8) + temp[7] * m.get(9);
+		invert[3][3] = temp[10] * m.get(10) + temp[4] * m.get(8) + temp[9] * m.get(9);
+		invert[3][3] -= temp[8] * m.get(9) + temp[11] * m.get(10) + temp[5] * m.get(8);
+		/* calculate determinant */
+		determinant = m.get(0) * invert[0][0] + m.get(1) * invert[0][1] + m.get(2) * invert[0][2] + m.get(3) * invert[0][3];
 
-		inv.mxarr[3][0] = -m.mxarr[1][0] * m.mxarr[2][1] * m.mxarr[3][2] +
-			m.mxarr[1][0] * m.mxarr[2][2] * m.mxarr[3][1] +
-			m.mxarr[2][0] * m.mxarr[1][1] * m.mxarr[3][2] -
-			m.mxarr[2][0] * m.mxarr[1][2] * m.mxarr[3][1] -
-			m.mxarr[3][0] * m.mxarr[1][1] * m.mxarr[2][2] +
-			m.mxarr[3][0] * m.mxarr[1][2] * m.mxarr[2][1];
-
-		inv.mxarr[0][1] = -m.mxarr[0][1] * m.mxarr[2][2] * m.mxarr[3][3] +
-			m.mxarr[0][1] * m.mxarr[2][3] * m.mxarr[3][2] +
-			m.mxarr[2][1] * m.mxarr[0][2] * m.mxarr[3][3] -
-			m.mxarr[2][1] * m.mxarr[0][3] * m.mxarr[3][2] -
-			m.mxarr[3][1] * m.mxarr[0][2] * m.mxarr[2][3] +
-			m.mxarr[3][1] * m.mxarr[0][3] * m.mxarr[2][2];
-
-		inv.mxarr[1][1] = m.mxarr[0][0] * m.mxarr[2][2] * m.mxarr[3][3] -
-			m.mxarr[0][0] * m.mxarr[2][3] * m.mxarr[3][2] -
-			m.mxarr[2][0] * m.mxarr[0][2] * m.mxarr[3][3] +
-			m.mxarr[2][0] * m.mxarr[0][3] * m.mxarr[3][2] +
-			m.mxarr[3][0] * m.mxarr[0][2] * m.mxarr[2][3] -
-			m.mxarr[3][0] * m.mxarr[0][3] * m.mxarr[2][2];
-
-		inv.mxarr[2][1] = -m.mxarr[0][0] * m.mxarr[2][1] * m.mxarr[3][3] +
-			m.mxarr[0][0] * m.mxarr[2][3] * m.mxarr[3][1] +
-			m.mxarr[2][0] * m.mxarr[0][1] * m.mxarr[3][3] -
-			m.mxarr[2][0] * m.mxarr[0][3] * m.mxarr[3][1] -
-			m.mxarr[3][0] * m.mxarr[0][1] * m.mxarr[2][3] +
-			m.mxarr[3][0] * m.mxarr[0][3] * m.mxarr[2][1];
-
-		inv.mxarr[3][1] = m.mxarr[0][0] * m.mxarr[2][1] * m.mxarr[3][2] -
-			m.mxarr[0][0] * m.mxarr[2][2] * m.mxarr[3][1] -
-			m.mxarr[2][0] * m.mxarr[0][1] * m.mxarr[3][2] +
-			m.mxarr[2][0] * m.mxarr[0][2] * m.mxarr[3][1] +
-			m.mxarr[3][0] * m.mxarr[0][1] * m.mxarr[2][2] -
-			m.mxarr[3][0] * m.mxarr[0][2] * m.mxarr[2][1];
-
-		inv.mxarr[0][2] = m.mxarr[0][1] * m.mxarr[1][2] * m.mxarr[3][3] -
-			m.mxarr[0][1] * m.mxarr[1][3] * m.mxarr[3][2] -
-			m.mxarr[1][1] * m.mxarr[0][2] * m.mxarr[3][3] +
-			m.mxarr[1][1] * m.mxarr[0][3] * m.mxarr[3][2] +
-			m.mxarr[3][1] * m.mxarr[0][2] * m.mxarr[1][3] -
-			m.mxarr[3][1] * m.mxarr[0][3] * m.mxarr[1][2];
-
-		inv.mxarr[1][2] = -m.mxarr[0][0] * m.mxarr[1][2] * m.mxarr[3][3] +
-			m.mxarr[0][0] * m.mxarr[1][3] * m.mxarr[3][2] +
-			m.mxarr[1][0] * m.mxarr[0][2] * m.mxarr[3][3] -
-			m.mxarr[1][0] * m.mxarr[0][3] * m.mxarr[3][2] -
-			m.mxarr[3][0] * m.mxarr[0][2] * m.mxarr[1][3] +
-			m.mxarr[3][0] * m.mxarr[0][3] * m.mxarr[1][2];
-
-		inv.mxarr[2][2] = m.mxarr[0][0] * m.mxarr[1][1] * m.mxarr[3][3] -
-			m.mxarr[0][0] * m.mxarr[1][3] * m.mxarr[3][1] -
-			m.mxarr[1][0] * m.mxarr[0][1] * m.mxarr[3][3] +
-			m.mxarr[1][0] * m.mxarr[0][3] * m.mxarr[3][1] +
-			m.mxarr[3][0] * m.mxarr[0][1] * m.mxarr[1][3] -
-			m.mxarr[3][0] * m.mxarr[0][3] * m.mxarr[1][1];
-
-		inv.mxarr[3][2] = -m.mxarr[0][0] * m.mxarr[1][1] * m.mxarr[3][2] +
-			m.mxarr[0][0] * m.mxarr[1][2] * m.mxarr[3][1] +
-			m.mxarr[1][0] * m.mxarr[0][1] * m.mxarr[3][2] -
-			m.mxarr[1][0] * m.mxarr[0][2] * m.mxarr[3][1] -
-			m.mxarr[3][0] * m.mxarr[0][1] * m.mxarr[1][2] +
-			m.mxarr[3][0] * m.mxarr[0][2] * m.mxarr[1][1];
-
-		inv.mxarr[0][3] = -m.mxarr[0][1] * m.mxarr[1][2] * m.mxarr[2][3] +
-			m.mxarr[0][1] * m.mxarr[1][3] * m.mxarr[2][2] +
-			m.mxarr[1][1] * m.mxarr[0][2] * m.mxarr[2][3] -
-			m.mxarr[1][1] * m.mxarr[0][3] * m.mxarr[2][2] -
-			m.mxarr[2][1] * m.mxarr[0][2] * m.mxarr[1][3] +
-			m.mxarr[2][1] * m.mxarr[0][3] * m.mxarr[1][2];
-
-		inv.mxarr[1][3] = m.mxarr[0][0] * m.mxarr[1][2] * m.mxarr[2][3] -
-			m.mxarr[0][0] * m.mxarr[1][3] * m.mxarr[2][2] -
-			m.mxarr[1][0] * m.mxarr[0][2] * m.mxarr[2][3] +
-			m.mxarr[1][0] * m.mxarr[0][3] * m.mxarr[2][2] +
-			m.mxarr[2][0] * m.mxarr[0][2] * m.mxarr[1][3] -
-			m.mxarr[2][0] * m.mxarr[0][3] * m.mxarr[1][2];
-
-		inv.mxarr[2][3] = -m.mxarr[0][0] * m.mxarr[1][1] * m.mxarr[2][3] +
-			m.mxarr[0][0] * m.mxarr[1][3] * m.mxarr[2][1] +
-			m.mxarr[1][0] * m.mxarr[0][1] * m.mxarr[2][3] -
-			m.mxarr[1][0] * m.mxarr[0][3] * m.mxarr[2][1] -
-			m.mxarr[2][0] * m.mxarr[0][1] * m.mxarr[1][3] +
-			m.mxarr[2][0] * m.mxarr[0][3] * m.mxarr[1][1];
-
-		inv.mxarr[3][3] = m.mxarr[0][0] * m.mxarr[1][1] * m.mxarr[2][2] -
-			m.mxarr[0][0] * m.mxarr[1][2] * m.mxarr[2][1] -
-			m.mxarr[1][0] * m.mxarr[0][1] * m.mxarr[2][2] +
-			m.mxarr[1][0] * m.mxarr[0][2] * m.mxarr[2][1] +
-			m.mxarr[2][0] * m.mxarr[0][1] * m.mxarr[1][2] -
-			m.mxarr[2][0] * m.mxarr[0][2] * m.mxarr[1][1];
-
-		float det = m.mxarr[0][0] * inv.mxarr[0][0] + m.mxarr[0][1] * inv.mxarr[1][0] + m.mxarr[0][2] * inv.mxarr[2][0] + m.mxarr[0][3] * inv.mxarr[3][0];
-
-		if (det == 0) {
-			throw("Determinant is 0");
+		if(determinant == 0){
+			throw std::invalid_argument("Determinant is 0");
 		}
-		else {
-			det = 1.0f / det;
-			for (int i = 0; i < 4; i++) {
-				for (int j = 0; i < 4; i++) {
-					inv.mxarr[i][j] * det;
-				}
+		/* calculate matrix inverse */
+		determinant = 1.0f / determinant;
+
+		Matrix4D resultMatrix;
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				resultMatrix[i][j] = float(invert[i][j] * determinant);
 			}
-			m = inv;
 		}
+		return resultMatrix;
 	}
 
 	Matrix4D perspective(float fov, float aspect, float near, float far) {

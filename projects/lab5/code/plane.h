@@ -4,7 +4,7 @@
 class Plane {
     public: 
         Plane();
-        Plane(std::vector<Vector4D> &pointvectors);
+        Plane(std::vector<Vector4D> pointVectors);
 
         Plane(Plane &plane);
 

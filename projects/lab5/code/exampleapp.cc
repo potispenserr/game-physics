@@ -11,6 +11,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 #include "imgui.h"
+#include "plane.h"
+#include "ray.h"
 
 // HackFIX1337boi
 #ifndef strncpy_s
@@ -128,7 +130,7 @@ namespace Example
 
 		float radFov = 45 * (PI / 180);
 
-		Matrix4D projection = projection.perspective(radFov, 800.0f / 600.0f, 0.1f, 100.0f);
+		projection = projection.perspective(radFov, 800.0f / 600.0f, 0.1f, 100.0f);
 
 		cam.camPos = Vector4D(0.0f, 0.0f, 3.0f);
 		cam.camTarget = Vector4D(0.0f, 0.0f, 0.0f);
@@ -142,31 +144,33 @@ namespace Example
 
 		std::shared_ptr<MeshResource> pointLightMesh = std::make_shared<MeshResource>();
 		std::shared_ptr<TextureResource> lightTexPtr = std::make_shared<TextureResource>();
-		std::shared_ptr<ShaderObject> pointLightShader = std::make_shared<ShaderObject>("./resources/LightCubeVS.vs", "./resources/LightCubeFS.fs");
+		std::shared_ptr<ShaderObject> pointLightShader = std::make_shared<ShaderObject>("./resources/shaders/LightCubeVS.vs", "./resources/shaders/LightCubeFS.fs");
 
 
 		std::shared_ptr<MeshResource> objectMesh = std::make_shared<MeshResource>();
-		std::shared_ptr<ShaderObject> lightShader = std::make_shared<ShaderObject>("./resources/NormalMappingVS.vs", "./resources/NormalMappingFS.fs");
+		std::shared_ptr<ShaderObject> lightShader = std::make_shared<ShaderObject>("./resources/shaders/NormalMappingVS.vs", "./resources/shaders/NormalMappingFS.fs");
 		std::shared_ptr<TextureResource> texPtr = std::make_shared<TextureResource>();
 		std::shared_ptr<TextureResource> normalMapPtr = std::make_shared<TextureResource>();
 
+		std::shared_ptr<ShaderObject> rayShader = std::make_shared<ShaderObject>("./resources/shaders/RayShaderVS.vs", "./resources/shaders/RayShaderFS.fs");
+
 
 		pointLightMesh->loadObj("./resources/cube2.obj");
-		objectMesh->loadGLTF("./resources/cube.gltf");
+		//objectMesh->loadGLTF("./resources/cube.gltf");
 
 		lightCube.setMesh(pointLightMesh);
 		lightCube.setShader(pointLightShader);
 		lightCube.setTexture(lightTexPtr);
-		lightCube.initTexture("./resources/container2fixed.png");
+		lightCube.initTexture("./resources/container45.jpg");
 		lightCube.setTransform(Matrix4D());
 
 
-		gn.setMesh(objectMesh);
-		gn.setShader(lightShader);
-		gn.setTexture(texPtr);
-		gn.setNormalMap(normalMapPtr);
-		gn.initTexture("");
-		gn.setTransform(Matrix4D());
+		// gn.setMesh(objectMesh);
+		// gn.setShader(lightShader);
+		// gn.setTexture(texPtr);
+		// gn.setNormalMap(normalMapPtr);
+		// gn.initTexture("");
+		// gn.setTransform(Matrix4D());
 
 		// gn2.setMesh(objectMesh);
 		// gn2.setShader(lightShader);
@@ -175,13 +179,91 @@ namespace Example
 
 		//gn.updateTransform(Matrix4D::scale(Vector4D(0.05, 0.05, 0.05)));
 
-		gn.updateTransform(Matrix4D::scale(Vector4D(1.3, 1.3, 1.3)));
-		gn.updateTransform(Matrix4D::roty(160));
+		// gn.updateTransform(Matrix4D::scale(Vector4D(1.3, 1.3, 1.3)));
+		// gn.updateTransform(Matrix4D::roty(160));
 		// gn2.updateTransform(Matrix4D::scale(Vector4D(0.3, 0.3, 0.3)));
 		// gn2.updateTransform(Matrix4D::translation(Vector4D(2.0f, 2.0f, 2.0f)));
 
+		//rest plane
+		std::vector<Vector4D> planeVec;
+		planeVec.push_back(Vector4D(0.5f,  0.5f, 0.0f));
+		planeVec.push_back(Vector4D(0.5f, -0.5f, 0.0f));
+		planeVec.push_back(Vector4D(-0.5f, -0.5f, 0.0f));
+		planeVec.push_back(Vector4D(-0.5f,  0.5f, 0.0f));
+
+		Plane plane(planeVec);
+
+		float vertices[] = {
+        // positions          // colors           // texture coords
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+		};
+		unsigned int indices[] = {
+			0, 1, 3, 
+			1, 2, 3 
+		};
+		unsigned int VBO, VAO, EBO;
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
+
+		glBindVertexArray(VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+
+		//test ray
+		std::vector<Ray> rays;
+		Ray testRay(cam.camPos, cam.camPos * -50);
+		testRay.rayColor = Vector4D(1.0f, 1.0f, 1.0f);
+		rays.push_back(testRay);
+		//rays.push_back(Ray(Vector4D(0.0f, 0.0f, 0.0f), Vector4D(0.0f, 5.0f, 5.0f)));
+
+
+
+		std::vector<float> testRayVectors;
+		testRayVectors = {0.0f, 0.0f, 0.0f, 5.0f, 5.0f, 5.0f};
+
+		std::vector<Vector4D> fuck;
+		fuck.push_back(Vector4D(0.0f, 0.0f, 0.0f));
+		fuck.push_back(Vector4D(0.0f, 0.0f, 0.0f));
+
+		std::cout << "testray size " << sizeof(testRayVectors) << "\n";
+		std::cout << "fuck size " << sizeof(fuck) << "\n";
 
 		
+
+		// unsigned int rayVAO;
+		// unsigned int rayVBO;
+
+		// glGenVertexArrays(1, &rayVAO);
+		// glGenBuffers(1, &rayVBO);
+		// glBindVertexArray(rayVAO);
+
+		// glBindBuffer(GL_ARRAY_BUFFER, rayVBO);
+		// glBufferData(GL_ARRAY_BUFFER, sizeof(testRayVectors) * testRayVectors.size(), testRayVectors.data(), GL_STATIC_DRAW);
+
+		// glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        // glEnableVertexAttribArray(0);
+ 
+        // glBindBuffer(GL_ARRAY_BUFFER, 0); 
+        // glBindVertexArray(0);
+
+
 
 		LightNode light = LightNode(lightShader);
 		light.lightColor = Vector4D(1.0f, 1.0f, 1.0f);
@@ -330,10 +412,26 @@ namespace Example
 			});
 			
 
-			window->SetMousePressFunction([this](int32 mousekey, int32 status, int32 keyc) {
+			window->SetMousePressFunction([this, &rays](int32 mousekey, int32 status, int32 keyc) {
 				std::cout << "mousekey: " << mousekey << " status: " << status << " keyc: " << keyc << "\n";
 				mousepress = mousekey;
 				mousestatus = status;
+				if(mousepress == 1 && status == 1) {
+					double mouseX;
+					double mouseY;
+					window->GetCursorPosition(&mouseX, &mouseY);
+					std::cout << "MouseX:" << mouseX << " MouseY: " << mouseY << "\n";
+					Ray rayWorld = rayCast(mouseX, mouseY, cam.getView(), projection, 1024, 768, cam.camPos);
+					//std::cout << "x: " << rayWorld.x() << "y: " << rayWorld.y() << "z: " << rayWorld.z() << "\n";
+					//Ray newRay = Ray(Vector4D(rayWorld.x(), rayWorld.y() , rayWorld.z()), Vector4D(rayWorld.x() * 5.0f, rayWorld.y() * 5.0f, rayWorld.z() * 5.0f));
+					std::srand(time(0));
+					const float randomColorR = (std::rand() % 255) / 255.0f;
+					const float randomColorG = (std::rand() % 255) / 255.0f;
+					const float randomColorB = (std::rand() % 255) / 255.0f;
+					std::cout << "randomColorR " << randomColorR << "randomColorG " << randomColorG << "randomColorB " << randomColorB << "\n";
+					rayWorld.rayColor = Vector4D(randomColorR, randomColorG, randomColorB, 1.0f);
+					rays.push_back(rayWorld);
+				}
 				});
 
 			window->SetMouseMoveFunction([&](float64 mousex, float64 mousey) {
@@ -380,9 +478,34 @@ namespace Example
 				});
 			cam.setView();
 			light.updateLighting(cam, projection, lightCube);
-			gn.draw(cam, projection, light.lightPos);
+			//gn.draw(cam, projection, light.lightPos);
 			lightCube.draw(cam, projection, light.lightPos);
 			//gn2.draw(cam, projection, light.lightPos);
+
+			Matrix4D transform;
+
+			lightShader.get()->use();
+			lightShader.get()->setMat4(std::string("model"), transform);
+			lightShader.get()->setMat4(std::string("view"), cam.getView());
+			lightShader.get()->setMat4(std::string("projection"), projection);
+			lightShader.get()->setVec3(std::string("lightPosition"), lightPosition);
+			lightShader.get()->setVec3(std::string("viewPosition"), cam.camPos);
+			//Square Draw
+			glBindVertexArray(VAO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+			//ray draw
+			//testRay.draw();
+			rayShader.get()->use();
+			rayShader.get()->setMat4(std::string("model"), transform);
+			rayShader.get()->setMat4(std::string("view"), cam.getView());
+			rayShader.get()->setMat4(std::string("projection"), projection);
+			rayShader.get()->setVec3(std::string("viewPosition"), cam.camPos);
+			for(Ray ray : rays){
+				rayShader.get()->setVec4(std::string("rayColor"), ray.rayColor);
+				ray.draw();
+			}
 
 			///     _             _          __  __ 
 			///    | |           | |        / _|/ _|
@@ -395,7 +518,7 @@ namespace Example
 
 			this->window->SwapBuffers();
 		}
-		gn.clearMemory();
+		//gn.clearMemory();
 		//gn2.clearMemory();
 		glfwTerminate();
 	}
@@ -433,11 +556,101 @@ void ExampleApp::renderNano(NVGcontext * vg)
 	nvgBeginPath(vg);
 	nvgCircle(vg,600, 100, 50);
 	NVGpaint paint;
-	paint = nvgLinearGradient(vg, 600, 100, 650, 150, nvgRGBA(255, 0, 0, 255), nvgRGBA(0, 255, 0, 255));
+	//paint = nvgLinearGradient(vg, 600, 100, 650, 150, nvgRGBA(255, 0, 0, 255), nvgRGBA(0, 255, 0, 255));
 	nvgFillPaint(vg, paint);
 	nvgFill(vg);
 	
 
 	nvgRestore(vg);
 }
-}// namespace Example
+
+Ray ExampleApp::rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screenH, Vector4D camPos) 
+{
+    // float x = (2.0f * xpos) / SCR_WIDTH - 1.0f;
+    // float y = 1.0f - (2.0f * ypos) / SCR_HEIGHT; 
+    // float z = 1.0f;
+    // Vector4D ray_nds = Vector4D(x, y, z);
+    // // Change this part
+    // Vector4D ray_clip = Vector4D(-ray_nds.x(), ray_nds.y(), ray_nds.z(), 1.0f);
+	// projection.invert(projection);
+    // Vector4D ray_eye = projection * ray_clip;
+    // // And this part
+    // ray_eye = Vector4D(-ray_eye.x(), ray_eye.y(), ray_eye.z(), 0.0f);
+	// view.invert(view);
+    // Vector4D inv_ray_wor = view * ray_eye;
+    // Vector4D ray_wor = Vector4D(-inv_ray_wor.x(), inv_ray_wor.y(), inv_ray_wor.z());
+    // ray_wor = ray_wor.norm();
+    // return ray_wor;
+
+	Vector4D near(xPos, yPos, 0.0f);
+	Vector4D far(xPos, yPos, 1.0f);
+	Vector4D viewportOrigin;
+	Vector4D viewportSize(screenW, screenH);
+	Vector4D pNear = unproject(near, viewportOrigin, viewportSize, view, projection);
+	Vector4D pFar = unproject(far, viewportOrigin, viewportSize, view, projection);
+
+	Vector4D origin = pNear;
+	Vector4D normal = Vector4D(pFar - pNear);
+
+	std::cout << "origin" << "\n";
+	std::cout << origin.x() << " " << origin.y() << " " << origin.z() << "\n";
+	std::cout << "normal" << "\n";
+	std::cout << normal.x() << " " << normal.y() << " " << normal.z() << "\n";
+	Ray resultRay(origin, normal);
+	return resultRay;
+
+}
+Vector4D ExampleApp::unproject(Vector4D &viewportPoint, Vector4D &viewportOrigin, Vector4D &viewportSize, Matrix4D &view, Matrix4D &projection)
+{
+	//normalize input vector to viewport
+	Vector4D normal = { (viewportPoint.x() - viewportOrigin.x()) / viewportSize.x(), 
+		(viewportPoint.y() - viewportOrigin.y()) / viewportSize.y(), 
+		viewportPoint.z(), 1.0f};
+	
+	// transform to Normalized Device Coordinates
+	// x range: -1 - 1
+	normal.x() = normal.x() * 2.0f - 1.0f;
+	
+	// flipping the y-axis
+	//y range: -1 - 1
+	normal.y() = 1.0f - normal.y() * 2.0f;
+	
+	// z range: 0 - 1
+	if(normal.z() < 0.0f) {
+		normal.z() = 0.0f;
+	}
+
+	if(normal.z() > 1.0f) {
+		normal.z() = 1.0f;
+	}
+
+	//convert NDC to eye space 
+
+	Vector4D eyeSpace(0.0f, 0.0f, 0.0f, 0.0f);
+
+	//fuckshit = Matrix4D::invert(kanker);
+	Matrix4D inverseProj = Matrix4D::invert(projection);
+
+	projection.print();
+	inverseProj.print();
+
+	eyeSpace = inverseProj * normal;
+
+	// convert eye space to world space
+
+	//Matrix4D inverseView = Matrix4D::invert(view);
+	Matrix4D inverseView;
+
+	Vector4D worldSpace(0.0f, 0.0f, 0.0f, 0.0f);
+
+	worldSpace = inverseView * eyeSpace;
+
+	if(!worldSpace.w() == 0){
+		worldSpace.x() /= worldSpace.w();
+		worldSpace.y() /= worldSpace.w();
+		worldSpace.z() /= worldSpace.w();
+	}
+
+    return worldSpace;
+}
+} // namespace Example
