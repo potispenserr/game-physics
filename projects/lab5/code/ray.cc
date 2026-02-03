@@ -48,11 +48,20 @@ void Ray::draw()
 {
     // glBindVertexArray(rayVAO);
     // glDrawArrays(GL_LINES, 0, 2);
-    Vector4D lolRayEndpoint = Vector4D(rayOrigin + rayDirection  * -50);
     glBegin(GL_LINES);
 	glVertex3f(rayOrigin.x(), rayOrigin.y(), rayOrigin.z());
 	glVertex3f(rayDirection.x(), rayDirection.y(), rayDirection.z());
 	glEnd();
+}
+
+Vector4D Ray::getRayOrigin()
+{
+    return rayOrigin;
+}
+
+Vector4D Ray::getRayDir()
+{
+    return rayDirection;
 }
 
 Vector4D Ray::Intersect(Plane &plane)
@@ -70,4 +79,22 @@ Vector4D Ray::Intersect(Plane &plane)
     Vector4D intersectPoint = rayOrigin + ray * t;
 
     return intersectPoint;
+}
+void Ray::rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screenH) 
+{
+	
+	Vector4D near(xPos, yPos, 0.0f);
+	Vector4D far(xPos, yPos, 1.0f);
+	Vector4D viewportOrigin;
+	Vector4D viewportSize(screenW, screenH);
+	Vector4D pNear = Matrix4D::unproject(near, viewportOrigin, viewportSize, view, projection);
+	Vector4D pFar = Matrix4D::unproject(far, viewportOrigin, viewportSize, view, projection);
+
+	Vector4D origin = pNear;
+	Vector4D direction = pFar - pNear;
+
+
+    this->rayOrigin = origin;
+    this->rayDirection = direction;
+
 }

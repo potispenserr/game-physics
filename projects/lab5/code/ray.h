@@ -1,5 +1,6 @@
 #pragma once
 #include "Vector4D.h"
+#include "Matrix4D.h"
 #include "plane.h"
 class Ray
 {
@@ -11,6 +12,10 @@ public:
 
     void initializeRay();
     void draw();
+    void rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screenH);
+
+    Vector4D getRayOrigin();
+    Vector4D getRayDir();
     Vector4D Intersect(Plane &plane);
     Vector4D rayColor;
 

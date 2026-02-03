@@ -37,9 +37,7 @@ public:
 
 	void renderNano(NVGcontext * vg);
 
-	Ray rayCast(double xpos, double ypos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screnH, Vector4D camPos);
 
-	Vector4D unproject(Vector4D& viewportPoint, Vector4D& viewportOrigin, Vector4D& viewportSize, Matrix4D& view, Matrix4D& projection);
 
 	GLuint program;
 	GLuint vertexShader;
@@ -58,5 +56,7 @@ public:
 	int mousepress;
 	int mousestatus;
 	Matrix4D projection;
+	int width = 0;
+	int height = 0;
 };
 } // namespace Example

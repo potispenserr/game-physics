@@ -82,7 +82,7 @@ void Camera::setView()
 	view[3][2] = glmView[3][2];
 	view[3][3] = glmView[3][3];
 
-	//view = view.lookat(camPos, camPos + camFront, Vector4D(0.0f, 1.0f, 0.0f));
+	view = view.lookat(camPos, camPos + camFront, Vector4D(0.0f, 1.0f, 0.0f));
 }
 
 Vector4D Camera::getPosition()

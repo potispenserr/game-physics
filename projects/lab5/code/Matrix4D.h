@@ -282,93 +282,115 @@ public:
 		m = transp;
 	}
 
-	///Inverts matrix using Cramer's rule and returns the inverse. Code borrowed from an Intel publication
+	static float invf(int i, int j, Matrix4D& m){
+
+		int indexOffset = 2 + (j - i);
+
+		i += 4 + indexOffset;
+		j += 4 - indexOffset;
+
+		#define calcInv(a, b) m.get(((j + b) % 4) * 4 + ((i + a) % 4))
+
+		float inv =
+			+ calcInv(+1, -1) * calcInv(+0, +0) * calcInv(-1, +1)
+			+ calcInv(+1, +1) * calcInv(+0, -1) * calcInv(-1, +0)
+			+ calcInv(-1, -1) * calcInv(+1, +0) * calcInv(+0, +1)
+			- calcInv(-1, -1) * calcInv(+0, +0) * calcInv(+1, +1)
+			- calcInv(-1, +1) * calcInv(+0, -1) * calcInv(+1, +0)
+			- calcInv(+1, -1) * calcInv(-1, +0) * calcInv(+0, +1);
+
+		return (indexOffset % 2) ? inv : -inv;
+
+		#undef calcInv
+
+}
+
+	///Inverts matrix and returns the inverse.
 	///Throws an exception if determinant is 0
-	static Matrix4D invert(Matrix4D& m) {
-		Matrix4D invert;
-		double temp[12];
-		double determinant;
-		m.transpose(m);
+	static Matrix4D invert(Matrix4D& inMatrix) {
+		double inv[16];
+		for(int i = 0; i < 4; i++){
+			for(int j = 0; j < 4; j++) {
+				inv[j * 4 + i] = invf(i, j, inMatrix);
+			}
+		}
 
-		// calculate pairs for the first 8 elements
-		temp[0] = m.get(10) * m.get(15);
-		temp[1] = m.get(11) * m.get(14);
-		temp[2] = m.get(9) * m.get(15);
-		temp[3] = m.get(11) * m.get(13);
-		temp[4] = m.get(9) * m.get(14);
-		temp[5] = m.get(10) * m.get(13);
-		temp[6] = m.get(8) * m.get(15);
-		temp[7] = m.get(11) * m.get(12);
-		temp[8] = m.get(8) * m.get(14);
-		temp[9] = m.get(10) * m.get(12);
-		temp[10] = m.get(8) * m.get(13);
-		temp[11] = m.get(9) * m.get(12);
-		// calculate the first 8 elements
-		invert[0][0] = temp[0] * m.get(5) + temp[3] * m.get(6) + temp[4] * m.get(7);
-		invert[0][0] -= temp[1] * m.get(5) + temp[2] * m.get(6) + temp[5] * m.get(7);
-		invert[0][1] = temp[1] * m.get(4) + temp[6] * m.get(6) + temp[9] * m.get(7);
-		invert[0][1] -= temp[0] * m.get(4) + temp[7] * m.get(6) + temp[8] * m.get(7);
-		invert[0][2] = temp[2] * m.get(4) + temp[7] * m.get(5) + temp[10] * m.get(7);
-		invert[0][2] -= temp[3] * m.get(4) + temp[6] * m.get(5) + temp[11] * m.get(7);
-		invert[0][3] = temp[5] * m.get(4) + temp[8] * m.get(5) + temp[11] * m.get(6);
-		invert[0][3] -= temp[4] * m.get(4) + temp[9] * m.get(5) + temp[10] * m.get(6);
-		invert[1][0] = temp[1] * m.get(1) + temp[2] * m.get(2) + temp[5] * m.get(3);
-		invert[1][0] -= temp[0] * m.get(1) + temp[3] * m.get(2) + temp[4] * m.get(3);
-		invert[1][1] = temp[0] * m.get(0) + temp[7] * m.get(2) + temp[8] * m.get(3);
-		invert[1][1] -= temp[1] * m.get(0) + temp[6] * m.get(2) + temp[9] * m.get(3);
-		invert[1][2] = temp[3] * m.get(0) + temp[6] * m.get(1) + temp[11] * m.get(3);
-		invert[1][2] -= temp[2] * m.get(0) + temp[7] * m.get(1) + temp[10] * m.get(3);
-		invert[1][3] = temp[4] * m.get(0) + temp[9] * m.get(1) + temp[10] * m.get(2);
-		invert[1][3] -= temp[5] * m.get(0) + temp[8] * m.get(1) + temp[11] * m.get(2);
-		// calculate pairs for the second 8 elements
-		temp[0] = m.get(2) * m.get(7);
-		temp[1] = m.get(3) * m.get(6);
-		temp[2] = m.get(1) * m.get(7);
-		temp[3] = m.get(3) * m.get(5);
-		temp[4] = m.get(1) * m.get(6);
-		temp[5] = m.get(2) * m.get(5);
+		double determinant = 0;
 
-		temp[6] = m.get(0) * m.get(7);
-		temp[7] = m.get(3) * m.get(4);
-		temp[8] = m.get(0) * m.get(6);
-		temp[9] = m.get(2) * m.get(4);
-		temp[10] = m.get(0) * m.get(5);
-		temp[11] = m.get(1) * m.get(4);
-		// calculate the second 8 elements
-		invert[2][0] = temp[0] * m.get(13) + temp[3] * m.get(14) + temp[4] * m.get(15);
-		invert[2][0] -= temp[1] * m.get(13) + temp[2] * m.get(14) + temp[5] * m.get(15);
-		invert[2][1] = temp[1] * m.get(12) + temp[6] * m.get(14) + temp[9] * m.get(15);
-		invert[2][1] -= temp[0] * m.get(12) + temp[7] * m.get(14) + temp[8] * m.get(15);
-		invert[2][2] = temp[2] * m.get(12) + temp[7] * m.get(13) + temp[10] * m.get(15);
-		invert[2][2] -= temp[3] * m.get(12) + temp[6] * m.get(13) + temp[11] * m.get(15);
-		invert[2][3] = temp[5] * m.get(12) + temp[8] * m.get(13) + temp[11] * m.get(14);
-		invert[2][3] -= temp[4] * m.get(12) + temp[9] * m.get(13) + temp[10] * m.get(14);
-		invert[3][0] = temp[2] * m.get(10) + temp[5] * m.get(11) + temp[1] * m.get(9);
-		invert[3][0] -= temp[4] * m.get(11) + temp[0] * m.get(9) + temp[3] * m.get(10);
-		invert[3][1] = temp[8] * m.get(11) + temp[0] * m.get(8) + temp[7] * m.get(10);
-		invert[3][1] -= temp[6] * m.get(10) + temp[9] * m.get(11) + temp[1] * m.get(8);
-		invert[3][2] = temp[6] * m.get(9) + temp[11] * m.get(11) + temp[3] * m.get(8);
-		invert[3][2] -= temp[10] * m.get(11) + temp[2] * m.get(8) + temp[7] * m.get(9);
-		invert[3][3] = temp[10] * m.get(10) + temp[4] * m.get(8) + temp[9] * m.get(9);
-		invert[3][3] -= temp[8] * m.get(9) + temp[11] * m.get(10) + temp[5] * m.get(8);
-		/* calculate determinant */
-		determinant = m.get(0) * invert[0][0] + m.get(1) * invert[0][1] + m.get(2) * invert[0][2] + m.get(3) * invert[0][3];
+		for(int k = 0; k < 4; k++)
+		{
+			determinant += inMatrix.get(k) * inv[k*4];
+		}
+			
 
 		if(determinant == 0){
 			throw std::invalid_argument("Determinant is 0");
+			return Matrix4D();
 		}
-		/* calculate matrix inverse */
-		determinant = 1.0f / determinant;
 
-		Matrix4D resultMatrix;
-		for (size_t i = 0; i < 4; i++)
-		{
-			for (size_t j = 0; j < 4; j++)
-			{
-				resultMatrix[i][j] = float(invert[i][j] * determinant);
-			}
+		determinant = 1.0 / determinant;
+
+		Matrix4D out;
+
+		for (int i = 0; i < 16; i++) {
+			out.set(i, inv[i] * determinant);
+
 		}
-		return resultMatrix;
+
+		return out;
+	}
+
+	static Vector4D unproject(Vector4D &viewportPoint, Vector4D &viewportOrigin, Vector4D &viewportSize, Matrix4D &view, Matrix4D &projection)
+	{
+		//normalize input vector to viewport
+		Vector4D normal = { (viewportPoint.x() - viewportOrigin.x()) / viewportSize.x(), 
+			(viewportPoint.y() - viewportOrigin.y()) / viewportSize.y(), 
+			viewportPoint.z(), 1.0f};
+			
+		// X Range -1 to 1
+		normal[0] = normal[0] * 2.0f - 1.0f;
+		// Y Range -1 to 1 y axis is flipped
+		normal[1] = 1.0f - normal[1] * 2.0f;
+		
+		// Z Range 0 to 1
+		if (normal[2] < 0.0f) {
+			normal[2] = 0.0f;
+		}
+		if (normal[2] > 1.0f) {
+			normal[2] = 1.0f;
+		}
+
+		Matrix4D inverseProj = Matrix4D::invert(projection);
+		
+		Matrix4D ndcMatrix;
+		ndcMatrix[0][0] = normal.x();
+		ndcMatrix[0][1] = normal.y();
+		ndcMatrix[0][2] = normal.z();
+		ndcMatrix[0][3] = normal.w();
+
+		Matrix4D eyeMatrix;
+		eyeMatrix = ndcMatrix * inverseProj;
+
+		for(int i = 4; i < 16; i++) {
+			eyeMatrix.set(i, 0);
+		}
+
+		Vector4D worldSpace(0.0f, 0.0f, 0.0f, 0.0f);
+
+		Matrix4D inverseView = Matrix4D::invert(view);
+
+		Matrix4D worldMatrix;
+		worldMatrix = eyeMatrix * inverseView;
+		worldSpace.setxyzw(worldMatrix[0][0], worldMatrix[0][1], worldMatrix[0][2], worldMatrix[0][3]);
+
+
+		if(!worldSpace.w() == 0){
+			worldSpace.x() /= worldSpace.w();
+			worldSpace.y() /= worldSpace.w();
+			worldSpace.z() /= worldSpace.w();
+		}
+
+		return worldSpace;
 	}
 
 	Matrix4D perspective(float fov, float aspect, float near, float far) {

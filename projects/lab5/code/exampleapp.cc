@@ -156,7 +156,7 @@ namespace Example
 
 
 		pointLightMesh->loadObj("./resources/cube2.obj");
-		//objectMesh->loadGLTF("./resources/cube.gltf");
+		objectMesh->loadObj("./resources/cube2.obj");
 
 		lightCube.setMesh(pointLightMesh);
 		lightCube.setShader(pointLightShader);
@@ -165,21 +165,20 @@ namespace Example
 		lightCube.setTransform(Matrix4D());
 
 
-		// gn.setMesh(objectMesh);
-		// gn.setShader(lightShader);
-		// gn.setTexture(texPtr);
-		// gn.setNormalMap(normalMapPtr);
-		// gn.initTexture("");
-		// gn.setTransform(Matrix4D());
+		gn.setMesh(objectMesh);
+		gn.setShader(lightShader);
+		gn.setTexture(texPtr);
+		gn.setNormalMap(normalMapPtr);
+		gn.initTexture("./resources/container45.jpg");
+		gn.setTransform(Matrix4D());
 
 		// gn2.setMesh(objectMesh);
 		// gn2.setShader(lightShader);
 		// gn2.setTexture(texPtr);s
 		// gn2.setTransform(Matrix4D());
 
-		//gn.updateTransform(Matrix4D::scale(Vector4D(0.05, 0.05, 0.05)));
 
-		// gn.updateTransform(Matrix4D::scale(Vector4D(1.3, 1.3, 1.3)));
+		 gn.updateTransform(Matrix4D::scale(Vector4D(0.1, 0.1, 0.1)));
 		// gn.updateTransform(Matrix4D::roty(160));
 		// gn2.updateTransform(Matrix4D::scale(Vector4D(0.3, 0.3, 0.3)));
 		// gn2.updateTransform(Matrix4D::translation(Vector4D(2.0f, 2.0f, 2.0f)));
@@ -272,13 +271,6 @@ namespace Example
 
 		light.setupLighting();
 
-
-		Matrix4D rot;
-
-
-
-		int width;
-		int height;
 
 		this->window->GetSize(width, height);
 		std::cout << "width: " << width << " height: " << height << "\n";
@@ -421,15 +413,17 @@ namespace Example
 					double mouseY;
 					window->GetCursorPosition(&mouseX, &mouseY);
 					std::cout << "MouseX:" << mouseX << " MouseY: " << mouseY << "\n";
-					Ray rayWorld = rayCast(mouseX, mouseY, cam.getView(), projection, 1024, 768, cam.camPos);
+					Ray rayWorld;
+					rayWorld.rayCast(mouseX, mouseY, cam.getView(), projection, width, height);
 					//std::cout << "x: " << rayWorld.x() << "y: " << rayWorld.y() << "z: " << rayWorld.z() << "\n";
 					//Ray newRay = Ray(Vector4D(rayWorld.x(), rayWorld.y() , rayWorld.z()), Vector4D(rayWorld.x() * 5.0f, rayWorld.y() * 5.0f, rayWorld.z() * 5.0f));
 					std::srand(time(0));
 					const float randomColorR = (std::rand() % 255) / 255.0f;
 					const float randomColorG = (std::rand() % 255) / 255.0f;
 					const float randomColorB = (std::rand() % 255) / 255.0f;
-					std::cout << "randomColorR " << randomColorR << "randomColorG " << randomColorG << "randomColorB " << randomColorB << "\n";
 					rayWorld.rayColor = Vector4D(randomColorR, randomColorG, randomColorB, 1.0f);
+					gn.setTransform(Matrix4D::scale(Vector4D(0.1, 0.1, 0.1)));
+					gn.updateTransform(Matrix4D::translation(rayWorld.getRayOrigin()));
 					rays.push_back(rayWorld);
 				}
 				});
@@ -478,7 +472,7 @@ namespace Example
 				});
 			cam.setView();
 			light.updateLighting(cam, projection, lightCube);
-			//gn.draw(cam, projection, light.lightPos);
+			gn.draw(cam, projection, light.lightPos);
 			lightCube.draw(cam, projection, light.lightPos);
 			//gn2.draw(cam, projection, light.lightPos);
 
@@ -564,93 +558,6 @@ void ExampleApp::renderNano(NVGcontext * vg)
 	nvgRestore(vg);
 }
 
-Ray ExampleApp::rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screenH, Vector4D camPos) 
-{
-    // float x = (2.0f * xpos) / SCR_WIDTH - 1.0f;
-    // float y = 1.0f - (2.0f * ypos) / SCR_HEIGHT; 
-    // float z = 1.0f;
-    // Vector4D ray_nds = Vector4D(x, y, z);
-    // // Change this part
-    // Vector4D ray_clip = Vector4D(-ray_nds.x(), ray_nds.y(), ray_nds.z(), 1.0f);
-	// projection.invert(projection);
-    // Vector4D ray_eye = projection * ray_clip;
-    // // And this part
-    // ray_eye = Vector4D(-ray_eye.x(), ray_eye.y(), ray_eye.z(), 0.0f);
-	// view.invert(view);
-    // Vector4D inv_ray_wor = view * ray_eye;
-    // Vector4D ray_wor = Vector4D(-inv_ray_wor.x(), inv_ray_wor.y(), inv_ray_wor.z());
-    // ray_wor = ray_wor.norm();
-    // return ray_wor;
 
-	Vector4D near(xPos, yPos, 0.0f);
-	Vector4D far(xPos, yPos, 1.0f);
-	Vector4D viewportOrigin;
-	Vector4D viewportSize(screenW, screenH);
-	Vector4D pNear = unproject(near, viewportOrigin, viewportSize, view, projection);
-	Vector4D pFar = unproject(far, viewportOrigin, viewportSize, view, projection);
 
-	Vector4D origin = pNear;
-	Vector4D normal = Vector4D(pFar - pNear);
-
-	std::cout << "origin" << "\n";
-	std::cout << origin.x() << " " << origin.y() << " " << origin.z() << "\n";
-	std::cout << "normal" << "\n";
-	std::cout << normal.x() << " " << normal.y() << " " << normal.z() << "\n";
-	Ray resultRay(origin, normal);
-	return resultRay;
-
-}
-Vector4D ExampleApp::unproject(Vector4D &viewportPoint, Vector4D &viewportOrigin, Vector4D &viewportSize, Matrix4D &view, Matrix4D &projection)
-{
-	//normalize input vector to viewport
-	Vector4D normal = { (viewportPoint.x() - viewportOrigin.x()) / viewportSize.x(), 
-		(viewportPoint.y() - viewportOrigin.y()) / viewportSize.y(), 
-		viewportPoint.z(), 1.0f};
-	
-	// transform to Normalized Device Coordinates
-	// x range: -1 - 1
-	normal.x() = normal.x() * 2.0f - 1.0f;
-	
-	// flipping the y-axis
-	//y range: -1 - 1
-	normal.y() = 1.0f - normal.y() * 2.0f;
-	
-	// z range: 0 - 1
-	if(normal.z() < 0.0f) {
-		normal.z() = 0.0f;
-	}
-
-	if(normal.z() > 1.0f) {
-		normal.z() = 1.0f;
-	}
-
-	//convert NDC to eye space 
-
-	Vector4D eyeSpace(0.0f, 0.0f, 0.0f, 0.0f);
-
-	//fuckshit = Matrix4D::invert(kanker);
-	Matrix4D inverseProj = Matrix4D::invert(projection);
-
-	projection.print();
-	inverseProj.print();
-
-	eyeSpace = inverseProj * normal;
-
-	// convert eye space to world space
-
-	//Matrix4D inverseView = Matrix4D::invert(view);
-	Matrix4D inverseView;
-
-	Vector4D worldSpace(0.0f, 0.0f, 0.0f, 0.0f);
-
-	worldSpace = inverseView * eyeSpace;
-
-	if(!worldSpace.w() == 0){
-		worldSpace.x() /= worldSpace.w();
-		worldSpace.y() /= worldSpace.w();
-		worldSpace.z() /= worldSpace.w();
-	}
-
-    return worldSpace;
-}
 } // namespace Example
