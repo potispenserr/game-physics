@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 #include "imgui.h"
+#include "imgui_impl_glfw_gl3.h"
 #include "plane.h"
 #include "ray.h"
 
@@ -103,17 +104,14 @@ namespace Example
 		{
 			// set clear color to gray
 			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-
-			this->window->SetUiRender([this]()
-		{
-			this->renderUI();
-		});
+			
 		this->window->SetNanoVGRender([this](NVGcontext * vg)
 		{
 			this->renderNano(vg);
 		});
 			
 		}
+		this->window->InitializeImGUI();
 		return true;
 	}
 
@@ -153,6 +151,7 @@ namespace Example
 		std::shared_ptr<TextureResource> normalMapPtr = std::make_shared<TextureResource>();
 
 		std::shared_ptr<ShaderObject> rayShader = std::make_shared<ShaderObject>("./resources/shaders/RayShaderVS.vs", "./resources/shaders/RayShaderFS.fs");
+		std::shared_ptr<ShaderObject> squareShader = std::make_shared<ShaderObject>("./resources/shaders/squareShaderVS.vs", "./resources/shaders/squareShaderFS.fs");
 
 
 		pointLightMesh->loadObj("./resources/cube2.obj");
@@ -184,13 +183,17 @@ namespace Example
 		// gn2.updateTransform(Matrix4D::translation(Vector4D(2.0f, 2.0f, 2.0f)));
 
 		//rest plane
-		std::vector<Vector4D> planeVec;
-		planeVec.push_back(Vector4D(0.5f,  0.5f, 0.0f));
-		planeVec.push_back(Vector4D(0.5f, -0.5f, 0.0f));
-		planeVec.push_back(Vector4D(-0.5f, -0.5f, 0.0f));
-		planeVec.push_back(Vector4D(-0.5f,  0.5f, 0.0f));
+		std::vector<Vector4D> planePoints;
+		planePoints.push_back(Vector4D(0.5f,  0.5f, 0.0f));
+		planePoints.push_back(Vector4D(0.5f, -0.5f, 0.0f));
+		planePoints.push_back(Vector4D(-0.5f, -0.5f, 0.0f));
 
-		Plane plane(planeVec);
+		Plane testPlane(planePoints);
+		std::vector<Plane> planes;
+
+		Matrix4D squareTransform;
+
+		Vector4D squareColor = {0.5, 0.5, 0.5, 1};
 
 		float vertices[] = {
         // positions          // colors           // texture coords
@@ -199,6 +202,42 @@ namespace Example
         -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
         -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
 		};
+		float xMax = vertices[0];
+		float xMin = vertices[0];
+
+		float yMax = vertices[1];
+		float yMin = vertices[1];
+
+		float zMax = vertices[2];
+		float zMin = vertices[2];
+		for (int i = 8; i < 32; i += 8){
+			if(xMax < vertices[i]){
+				xMax = vertices[i];
+			}
+			if(xMin > vertices[i]){
+				xMin = vertices[i];
+			}
+
+		}
+		for (int i = 9; i < 32; i += 8){
+			if(yMax < vertices[i]){
+				yMax = vertices[i];
+			}
+			if(yMin > vertices[i]){
+				yMin = vertices[i];
+			}
+
+		}
+		for (int i = 10; i < 32; i += 8){
+			if(zMax < vertices[i]){
+				zMax = vertices[i];
+			}
+			if(zMin > vertices[i]){
+				zMin = vertices[i];
+			}
+
+		} 
+
 		unsigned int indices[] = {
 			0, 1, 3, 
 			1, 2, 3 
@@ -219,48 +258,13 @@ namespace Example
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-		
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(2);
-
 		//test ray
 		std::vector<Ray> rays;
-		Ray testRay(cam.camPos, cam.camPos * -50);
+		Ray testRay(testPlane.getNormal(), testPlane.getNormal() * -50);
 		testRay.rayColor = Vector4D(1.0f, 1.0f, 1.0f);
 		rays.push_back(testRay);
 		//rays.push_back(Ray(Vector4D(0.0f, 0.0f, 0.0f), Vector4D(0.0f, 5.0f, 5.0f)));
 
-
-
-		std::vector<float> testRayVectors;
-		testRayVectors = {0.0f, 0.0f, 0.0f, 5.0f, 5.0f, 5.0f};
-
-		std::vector<Vector4D> fuck;
-		fuck.push_back(Vector4D(0.0f, 0.0f, 0.0f));
-		fuck.push_back(Vector4D(0.0f, 0.0f, 0.0f));
-
-		std::cout << "testray size " << sizeof(testRayVectors) << "\n";
-		std::cout << "fuck size " << sizeof(fuck) << "\n";
-
-		
-
-		// unsigned int rayVAO;
-		// unsigned int rayVBO;
-
-		// glGenVertexArrays(1, &rayVAO);
-		// glGenBuffers(1, &rayVBO);
-		// glBindVertexArray(rayVAO);
-
-		// glBindBuffer(GL_ARRAY_BUFFER, rayVBO);
-		// glBufferData(GL_ARRAY_BUFFER, sizeof(testRayVectors) * testRayVectors.size(), testRayVectors.data(), GL_STATIC_DRAW);
-
-		// glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        // glEnableVertexAttribArray(0);
- 
-        // glBindBuffer(GL_ARRAY_BUFFER, 0); 
-        // glBindVertexArray(0);
 
 
 
@@ -281,6 +285,8 @@ namespace Example
 		float lastX = 512.0f;
 		float lastY = 384.0f;
 		bool firstRotation = true;
+
+		Vector4D squareHit; 
 		
 
 		//render loop
@@ -293,6 +299,9 @@ namespace Example
 			currentFrame = glfwGetTime();
 			deltaTime = currentFrame - lastFrame;	
 			lastFrame = currentFrame;
+
+			this->renderUI(squareHit);
+			
 
 			/*light.intensity = (float)cos(glfwGetTime());
 			std::cout << light.intensity << "\n";*/
@@ -404,7 +413,7 @@ namespace Example
 			});
 			
 
-			window->SetMousePressFunction([this, &rays](int32 mousekey, int32 status, int32 keyc) {
+			window->SetMousePressFunction([&](int32 mousekey, int32 status, int32 keyc) {
 				std::cout << "mousekey: " << mousekey << " status: " << status << " keyc: " << keyc << "\n";
 				mousepress = mousekey;
 				mousestatus = status;
@@ -422,8 +431,14 @@ namespace Example
 					const float randomColorG = (std::rand() % 255) / 255.0f;
 					const float randomColorB = (std::rand() % 255) / 255.0f;
 					rayWorld.rayColor = Vector4D(randomColorR, randomColorG, randomColorB, 1.0f);
+					Vector4D hitPoint = rayWorld.Intersect(testPlane);
+					if(hitPoint.x() >= xMin && hitPoint.x() <= xMax && hitPoint.y() >= yMin && hitPoint.y() <= yMax){
+						std::cout << "ray hit inside the square" << "\n";
+						squareHit = hitPoint;
+						squareColor = Vector4D(0.3f, 0, 0, 1);
+					} 
 					gn.setTransform(Matrix4D::scale(Vector4D(0.1, 0.1, 0.1)));
-					gn.updateTransform(Matrix4D::translation(rayWorld.getRayOrigin()));
+					gn.updateTransform(Matrix4D::translation(hitPoint));
 					rays.push_back(rayWorld);
 				}
 				});
@@ -476,23 +491,25 @@ namespace Example
 			lightCube.draw(cam, projection, light.lightPos);
 			//gn2.draw(cam, projection, light.lightPos);
 
-			Matrix4D transform;
 
-			lightShader.get()->use();
-			lightShader.get()->setMat4(std::string("model"), transform);
-			lightShader.get()->setMat4(std::string("view"), cam.getView());
-			lightShader.get()->setMat4(std::string("projection"), projection);
-			lightShader.get()->setVec3(std::string("lightPosition"), lightPosition);
-			lightShader.get()->setVec3(std::string("viewPosition"), cam.camPos);
+			//squareTransform = squareTransform.translation(testPlane.getPoint(0));
+
+			squareShader.get()->use();
+			squareShader.get()->setMat4(std::string("model"), squareTransform);
+			squareShader.get()->setMat4(std::string("view"), cam.getView());
+			squareShader.get()->setMat4(std::string("projection"), projection);
+			squareShader.get()->setVec4(std::string("color"), squareColor);
 			//Square Draw
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			
 
+			Matrix4D rayTransform;
 			//ray draw
 			//testRay.draw();
 			rayShader.get()->use();
-			rayShader.get()->setMat4(std::string("model"), transform);
+			rayShader.get()->setMat4(std::string("model"), rayTransform);
 			rayShader.get()->setMat4(std::string("view"), cam.getView());
 			rayShader.get()->setMat4(std::string("projection"), projection);
 			rayShader.get()->setVec3(std::string("viewPosition"), cam.camPos);
@@ -500,6 +517,9 @@ namespace Example
 				rayShader.get()->setVec4(std::string("rayColor"), ray.rayColor);
 				ray.draw();
 			}
+
+			ImGui::Render();
+
 
 			///     _             _          __  __ 
 			///    | |           | |        / _|/ _|
@@ -512,34 +532,32 @@ namespace Example
 
 			this->window->SwapBuffers();
 		}
-		//gn.clearMemory();
+		gn.clearMemory();
 		//gn2.clearMemory();
+		ImGui_ImplGlfwGL3_Shutdown();
+    	ImGui::DestroyContext();
 		glfwTerminate();
 	}
-void ExampleApp::renderUI() {
-	static float f = 0.0f;
-	static int counter = 0;
-	bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+    void ExampleApp::renderUI(Vector4D hitPoint)
+    {
+        ImGui_ImplGlfwGL3_NewFrame();
+		bool show_demo_window = true;
+    	bool show_another_window = false;
+        
+        {
+            static float f = 0.0f;
+            static int counter = 0;
+            ImGui::Begin("Hello, world!");
+			std::string hitText = std::string("Hit: ") + std::to_string(hitPoint.x()) + " " + std::to_string(hitPoint.y()) + " " + std::to_string(hitPoint.z());
+            ImGui::Text(hitText.c_str());
 
-	ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-	ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-	ImGui::Checkbox("Another Window", &show_another_window);
+            ImGui::Text("Average Frame Time %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
+			ImGui::Text("(%.1f FPS)", ImGui::GetIO().Framerate);
+			ImGui::End();
+        }
 
-	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-	ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-	if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-		counter++;
-	ImGui::SameLine();
-	ImGui::Text("counter = %d", counter);
-	ImGui::End();
-
-
-}
+    }
 
 void ExampleApp::renderNano(NVGcontext * vg)
 {

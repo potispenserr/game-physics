@@ -66,17 +66,37 @@ Vector4D Ray::getRayDir()
 
 Vector4D Ray::Intersect(Plane &plane)
 {
-    Vector4D ray = rayDirection - rayOrigin;
+    // Vector4D ray = rayOrigin - rayDirection;
+    // ray.norm();
 
+    // if(Vector4D::dot(plane.getNormal(), ray) >= 0){
+    //     std::cout << "early intersect exit" << "\n";
+    //     return Vector4D(0, 0, 0);
+    // }
+    // Vector4D planePoint = plane.getPoint(0);
+    // float p = Vector4D::dot((plane.getPoint(0) - rayOrigin), plane.getNormal());
+    // if (p == 0) {
+    //     std::cout << "line is not intersecting or is in the plane" << "\n";
+    //     return Vector4D(0, 0, 0);
+    // }
+    
+    // float d = p / Vector4D::dot(ray, plane.getNormal());
+
+    // Vector4D intersectPoint = rayOrigin + ray * d;
+
+
+    // std::cout << "Ray hits plane at " << intersectPoint.x() << " " << intersectPoint.y() << " " << intersectPoint.z() << "\n";
+
+    Vector4D ray = rayOrigin - rayDirection;
     float d = Vector4D::dot(plane.getNormal(), plane.getPoint(0));
-    if(Vector4D::dot(plane.getNormal(), ray) == 0){
+    if(Vector4D::dot(plane.getNormal(), ray) >= 0){
         std::cout << "early intersect exit" << "\n";
         return Vector4D(0, 0, 0);
     }
-    
-    float t = (d - Vector4D::dot(plane.getNormal(), rayOrigin) / Vector4D::dot(plane.getNormal(), ray ));
+    float x = (d - Vector4D::dot(plane.getNormal(), rayOrigin)) / Vector4D::dot(plane.getNormal(), ray);
 
-    Vector4D intersectPoint = rayOrigin + ray * t;
+    Vector4D intersectPoint = rayOrigin + ray * x;
+    std::cout << "Ray hits plane at " << intersectPoint.x() << " " << intersectPoint.y() << " " << intersectPoint.z() << "\n";
 
     return intersectPoint;
 }
@@ -97,4 +117,9 @@ void Ray::rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, 
     this->rayOrigin = origin;
     this->rayDirection = direction;
 
+}
+
+bool Ray::isInsideSquare()
+{
+    return false;
 }

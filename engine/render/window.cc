@@ -270,6 +270,20 @@ Window::MakeCurrent()
 	glfwMakeContextCurrent(this->window);
 }
 
+void Window::InitializeImGUI()
+{
+	// Setup Dear ImGui context
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui_ImplGlfwGL3_Init(window, false);
+	// io.NavFlags |= ImGuiNavFlags_EnableKeyboard;  // Enable Keyboard Controls
+	// io.NavFlags |= ImGuiNavFlags_EnableGamepad;   // Enable Gamepad Controls
+
+	// Setup style
+	ImGui::StyleColorsDark();
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -297,12 +311,6 @@ Window::SwapBuffers()
 			this->nanoFunc(this->vg);
 			nvgEndFrame(this->vg);
 		}
-		if (nullptr != this->uiFunc)
-		{
-			ImGui_ImplGlfwGL3_NewFrame();
-			this->uiFunc();
-			ImGui::Render();
-		}
 		glfwSwapBuffers(this->window);
 	}
 }
@@ -313,6 +321,10 @@ void Window::SetInputMode(int mode) {
 
 void Window::GetCursorPosition(double* xPos, double* yPos) {
 	glfwGetCursorPos(window, xPos, yPos);
+}
+
+GLFWwindow* Window::GetWindow(){
+	return window;
 }
 
 } // namespace Display

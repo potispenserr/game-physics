@@ -33,7 +33,7 @@ public:
 	void Run();
 	private:
 	
-	void renderUI();
+	void renderUI(Vector4D hitPoint);
 
 	void renderNano(NVGcontext * vg);
 
@@ -55,6 +55,7 @@ public:
 	float currentFrame;
 	int mousepress;
 	int mousestatus;
+
 	Matrix4D projection;
 	int width = 0;
 	int height = 0;

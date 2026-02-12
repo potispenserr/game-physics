@@ -40,6 +40,8 @@ public:
 	/// make this window current, meaning all draws will direct to this window context
 	void MakeCurrent();
 
+	void InitializeImGUI();
+
 	/// update a tick
 	void Update();
 	/// swap buffers at end of frame
@@ -65,6 +67,8 @@ public:
 	void SetUiRender(const std::function<void()>& func);
 	/// set optional nanovg render function
 	void SetNanoVGRender(const std::function<void(NVGcontext *)> & func);
+
+	GLFWwindow* GetWindow();
 
 private:
 
@@ -212,7 +216,6 @@ Window::SetNanoVGRender(const std::function<void(NVGcontext *)> & func)
 {
 	this->nanoFunc = func;
 }
-
 
 
 

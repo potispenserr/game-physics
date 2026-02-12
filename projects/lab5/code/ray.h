@@ -13,6 +13,7 @@ public:
     void initializeRay();
     void draw();
     void rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screenH);
+    bool isInsideSquare();
 
     Vector4D getRayOrigin();
     Vector4D getRayDir();

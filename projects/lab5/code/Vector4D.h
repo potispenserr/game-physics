@@ -180,7 +180,7 @@ public:
 	///
 	/// Returns the dot product of 2 vectors
 	///
-	static float dot(Vector4D& a, Vector4D& b) {
+	static float dot(const Vector4D& a, const Vector4D& b) {
 		float result = (a.vecarray[0] * b.vecarray[0]) + (a.vecarray[1] * b.vecarray[1]) + (a.vecarray[2] * b.vecarray[2]);
 
 		return(result);

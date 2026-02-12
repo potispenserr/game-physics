@@ -11,11 +11,14 @@ class Plane {
         ~Plane();
 
         Vector4D& getPoint(int index);
+        std::vector<Vector4D>& getPoints();
 
         Vector4D& getNormal();
+        float& getDistance();
 
     private:
         Vector4D normal;
+        float distance; 
         std::vector<Vector4D> pointVectors;
         
 
