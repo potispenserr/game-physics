@@ -1,6 +1,8 @@
 #include "ray.h"
 #include <iostream>
 #include "render/window.h"
+#define CMP(x, y) \
+	(fabsf(x - y) <= __FLT_EPSILON__ * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
 Ray::Ray() {
 
 }
@@ -66,27 +68,6 @@ Vector4D Ray::getRayDir()
 
 Vector4D Ray::Intersect(Plane &plane)
 {
-    // Vector4D ray = rayOrigin - rayDirection;
-    // ray.norm();
-
-    // if(Vector4D::dot(plane.getNormal(), ray) >= 0){
-    //     std::cout << "early intersect exit" << "\n";
-    //     return Vector4D(0, 0, 0);
-    // }
-    // Vector4D planePoint = plane.getPoint(0);
-    // float p = Vector4D::dot((plane.getPoint(0) - rayOrigin), plane.getNormal());
-    // if (p == 0) {
-    //     std::cout << "line is not intersecting or is in the plane" << "\n";
-    //     return Vector4D(0, 0, 0);
-    // }
-    
-    // float d = p / Vector4D::dot(ray, plane.getNormal());
-
-    // Vector4D intersectPoint = rayOrigin + ray * d;
-
-
-    // std::cout << "Ray hits plane at " << intersectPoint.x() << " " << intersectPoint.y() << " " << intersectPoint.z() << "\n";
-
     Vector4D ray = rayOrigin - rayDirection;
     float d = Vector4D::dot(plane.getNormal(), plane.getPoint(0));
     if(Vector4D::dot(plane.getNormal(), ray) >= 0){
@@ -100,6 +81,50 @@ Vector4D Ray::Intersect(Plane &plane)
 
     return intersectPoint;
 }
+
+bool Ray::Intersect(GraphicsNode &gn, Vector4D& hitPoint)
+{
+    Vector4D max = gn.getMesh().get()->maxCoords;
+    Vector4D min = gn.getMesh().get()->minCoords;
+
+    float xDivisor = (rayDirection.x() == 0.0f) ? 0.00001f : rayDirection.x();
+    float yDivisor = (rayDirection.y() == 0.0f) ? 0.00001f : rayDirection.y();
+    float zDivisor = (rayDirection.z() == 0.0f) ? 0.00001f : rayDirection.z();
+
+    float xMax = (max.x() - rayOrigin.x()) / xDivisor;
+    float xMin = (min.x() - rayOrigin.x()) / xDivisor;
+
+    float yMax = (max.y() - rayOrigin.y()) / yDivisor;
+    float yMin = (min.y() - rayOrigin.y()) / yDivisor;
+
+    float zMax = (max.z() - rayOrigin.z()) / zDivisor;
+    float zMin = (min.z() - rayOrigin.z()) / zDivisor;
+
+    float totalMax = fminf(fminf(fmaxf(xMax, xMin), fmaxf(yMax, yMin)), fmaxf(zMax, zMin));
+    float totalMin = fmaxf(fmaxf(fminf(xMax, xMin), fminf(yMax, yMin)), fminf(zMax, zMin));
+
+    //ray is intersecting AABB but the AABB is behind the ray origin
+    if(totalMax < 0){
+        std::cout << "ray does not intersect GN totalMax < 0" << "\n";
+        return false;
+    }
+
+    if(totalMin > totalMax){
+        std::cout << "ray does not intersect GN totalMin > totalMax" << "\n";
+        return false;
+    }
+
+    float totalResult = totalMin;
+
+    if(totalMin < 0.0f){
+        totalResult = totalMax;
+    }
+    
+    hitPoint = rayOrigin + rayDirection * totalResult;
+
+    return true;
+}
+
 void Ray::rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screenH) 
 {
 	
@@ -119,7 +144,3 @@ void Ray::rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, 
 
 }
 
-bool Ray::isInsideSquare()
-{
-    return false;
-}

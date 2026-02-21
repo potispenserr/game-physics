@@ -69,11 +69,13 @@ void GraphicsNode::setTransform(Vector4D newTransform)
 void GraphicsNode::setTransform(Matrix4D newTransform)
 {
 	transform = newTransform;
+	updateBounds();
 }
 
 void GraphicsNode::updateTransform(Matrix4D transformToAdd)
 {
 	transform = transform * transformToAdd;
+	updateBounds();
 }
 
 Matrix4D& GraphicsNode::getTransform()
@@ -169,7 +171,32 @@ void GraphicsNode::draw(Camera cam, Matrix4D projection, Vector4D lightPosition)
 
 }
 
+void GraphicsNode::updateBounds()
+{	
+	Vector4D& maxCoords = mesh.get()->maxCoords;
+	Vector4D& minCoords = mesh.get()->minCoords;
 
+	Matrix4D maxMatrix;
+	maxMatrix[0][0] = maxCoords[0];
+	maxMatrix[0][1] = maxCoords[1];
+	maxMatrix[0][2] = maxCoords[2];
+	maxMatrix[0][3] = maxCoords[3];
+
+	maxMatrix = maxMatrix * transform;
+
+	maxCoords = {maxMatrix[0][0], maxMatrix[0][1], maxMatrix[0][2], maxMatrix[0][3]};
+
+	Matrix4D minMatrix;
+	minMatrix[0][0] = minCoords[0];
+	minMatrix[0][1] = minCoords[1];
+	minMatrix[0][2] = minCoords[2];
+	minMatrix[0][3] = minCoords[3];
+
+	minMatrix = minMatrix * transform;
+
+	minCoords = {minMatrix[0][0], minMatrix[0][1], minMatrix[0][2], minMatrix[0][3]};
+
+}
 
 void GraphicsNode::clearMemory()
 {

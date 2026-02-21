@@ -202,6 +202,8 @@ void MeshResource::loadObj(std::string pathToFile)
 		}
 		std::cout << "finished loading obj" << "\n";
 		indexVertices(finalVerts);
+		generateBounds(vertices);
+
 		//setVertices(finalVerts);
 
 	}
@@ -375,3 +377,51 @@ bool MeshResource::findMatchingVertexInMap(const Vertex& vertToFind, const std::
 	return false;
 }
 
+void MeshResource::generateBounds(std::vector<Vector4D> verts)
+{
+	float minX = verts[0].x();
+	float minY = verts[0].y();
+	float minZ = verts[0].z();
+
+	float maxX = verts[0].x(); 
+	float maxY = verts[0].y(); 
+	float maxZ = verts[0].z();
+
+	for (int i = 0; i < verts.size(); i++){
+		// X checking
+		if(maxX < verts[i].x()){
+			maxX = verts[i].x();
+		}
+		if(minX > verts[i].x()){
+			minX = verts[i].x();
+		}
+
+		// Y checking
+		if(maxY < verts[i].y()){
+			maxY = verts[i].y();
+		}
+
+		if(minY > verts[i].y()){
+			minY = verts[i].y();
+		}
+
+		// Z checking
+		if(maxZ < verts[i].z()){
+			maxZ = verts[i].z();
+		}
+
+		if(minZ > verts[i].z()){
+			minZ = verts[i].z();
+		}
+
+	}
+	this->maxCoords = {maxX, maxY, maxZ};
+	this->minCoords = {minX, minY, minZ};
+
+}
+
+void MeshResource::getBounds(Vector4D &max, Vector4D &min)
+{
+	max = maxCoords;
+	min = minCoords;
+}

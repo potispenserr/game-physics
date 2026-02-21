@@ -40,6 +40,7 @@ public:
 
 	void draw(Camera cam, Matrix4D projection, Vector4D lightPosition);
 
+	void updateBounds();
 
 	void clearMemory();
 
@@ -52,6 +53,8 @@ private:
 	std::shared_ptr<TextureResource> normalMap;
 	std::shared_ptr<ShaderObject> shader;
 	Matrix4D transform;
+	Vector4D minCoords;
+	Vector4D maxCoords;
 
 
 };

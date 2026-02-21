@@ -2,6 +2,7 @@
 #include "Vector4D.h"
 #include "Matrix4D.h"
 #include "plane.h"
+#include "GraphicsNode.h"
 class Ray
 {
 public:
@@ -13,12 +14,13 @@ public:
     void initializeRay();
     void draw();
     void rayCast(double xPos, double yPos, Matrix4D view, Matrix4D projection, unsigned int screenW, unsigned int screenH);
-    bool isInsideSquare();
 
     Vector4D getRayOrigin();
     Vector4D getRayDir();
     Vector4D Intersect(Plane &plane);
+    bool Intersect(GraphicsNode &gn, Vector4D& hitPoint);
     Vector4D rayColor;
+
 
 
 private:

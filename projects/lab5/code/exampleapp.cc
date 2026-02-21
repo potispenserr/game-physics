@@ -177,8 +177,10 @@ namespace Example
 		// gn2.setTransform(Matrix4D());
 
 
-		 gn.updateTransform(Matrix4D::scale(Vector4D(0.1, 0.1, 0.1)));
-		// gn.updateTransform(Matrix4D::roty(160));
+		gn.updateTransform(Matrix4D::scale(Vector4D(0.5, 0.5, 0.5)));
+		gn.updateTransform(Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f)));
+
+		//gn.updateTransform(Matrix4D::roty(160));
 		// gn2.updateTransform(Matrix4D::scale(Vector4D(0.3, 0.3, 0.3)));
 		// gn2.updateTransform(Matrix4D::translation(Vector4D(2.0f, 2.0f, 2.0f)));
 
@@ -265,7 +267,10 @@ namespace Example
 		rays.push_back(testRay);
 		//rays.push_back(Ray(Vector4D(0.0f, 0.0f, 0.0f), Vector4D(0.0f, 5.0f, 5.0f)));
 
-
+		unsigned int cubeVBO;
+		unsigned int cubeVAO;
+		Matrix4D cubeTransform;
+		setupCube(cubeVBO, cubeVAO);
 
 
 		LightNode light = LightNode(lightShader);
@@ -277,7 +282,7 @@ namespace Example
 
 
 		this->window->GetSize(width, height);
-		std::cout << "width: " << width << " height: " << height << "\n";
+		//std::cout << "width: " << width << " height: " << height << "\n";
 
 		float yaw = -90;
 		float pitch = 0;
@@ -286,13 +291,15 @@ namespace Example
 		float lastY = 384.0f;
 		bool firstRotation = true;
 
-		Vector4D squareHit; 
+		std::vector<Vector4D> hitResults;
+		hitResults.push_back(Vector4D(0.0f, 0.0f, 0.0f));
+
+		Vector4D squareHit = {50.0f, 0.0f}; 
 		
 
 		//render loop
 		while (this->window->IsOpen())
 		{
-			//light.lightColor = Vector4D(1.0f, 1.0f, 1.0f);
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			this->window->Update();
@@ -300,15 +307,7 @@ namespace Example
 			deltaTime = currentFrame - lastFrame;	
 			lastFrame = currentFrame;
 
-			this->renderUI(squareHit);
-			
-
-			/*light.intensity = (float)cos(glfwGetTime());
-			std::cout << light.intensity << "\n";*/
-			
-			
-
-			//std::cout << "Lightpos X:" << light.lightPos.x() << " Y:" << light.lightPos.y() << " Z:" << light.lightPos.z() << "\n";
+			this->renderUI(squareHit, hitResults);
 
 			window->SetKeyPressFunction([this, &light](int32 asciikey, int32 argb, int32 status, int32 mod)
 			{
@@ -436,9 +435,17 @@ namespace Example
 						std::cout << "ray hit inside the square" << "\n";
 						squareHit = hitPoint;
 						squareColor = Vector4D(0.3f, 0, 0, 1);
-					} 
-					gn.setTransform(Matrix4D::scale(Vector4D(0.1, 0.1, 0.1)));
-					gn.updateTransform(Matrix4D::translation(hitPoint));
+					}
+					Vector4D gnHitPoint;
+					bool gnHit = false;
+					gnHit = rayWorld.Intersect(gn, gnHitPoint);
+					if(gnHit == true){
+						std::cout << "gn hit" << "\n";
+						std::cout << gnHitPoint.x() << " " << gnHitPoint.y() << " " << gnHitPoint.z() << "\n";
+					}
+					hitResults[0] = gnHitPoint;
+					//gn.setTransform(Matrix4D::scale(Vector4D(0.1, 0.1, 0.1)));
+					//gn.updateTransform(Matrix4D::translation(hitPoint));
 					rays.push_back(rayWorld);
 				}
 				});
@@ -506,8 +513,7 @@ namespace Example
 			
 
 			Matrix4D rayTransform;
-			//ray draw
-			//testRay.draw();
+
 			rayShader.get()->use();
 			rayShader.get()->setMat4(std::string("model"), rayTransform);
 			rayShader.get()->setMat4(std::string("view"), cam.getView());
@@ -517,6 +523,18 @@ namespace Example
 				rayShader.get()->setVec4(std::string("rayColor"), ray.rayColor);
 				ray.draw();
 			}
+			
+			// draw intersection point cube
+			cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
+			Matrix4D newTrans = cubeTransform.translation(squareHit);
+			cubeTransform = cubeTransform * newTrans;
+			pointLightShader.get()->use();
+			pointLightShader.get()->setMat4(std::string("model"), cubeTransform);
+			pointLightShader.get()->setMat4(std::string("view"), cam.getView());
+			pointLightShader.get()->setMat4(std::string("projection"), projection);
+			glBindVertexArray(cubeVAO);
+        	glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
 			ImGui::Render();
 
@@ -539,7 +557,7 @@ namespace Example
 		glfwTerminate();
 	}
 
-    void ExampleApp::renderUI(Vector4D hitPoint)
+    void ExampleApp::renderUI(Vector4D& hitPoint, std::vector<Vector4D>& hitResults)
     {
         ImGui_ImplGlfwGL3_NewFrame();
 		bool show_demo_window = true;
@@ -549,8 +567,24 @@ namespace Example
             static float f = 0.0f;
             static int counter = 0;
             ImGui::Begin("Hello, world!");
-			std::string hitText = std::string("Hit: ") + std::to_string(hitPoint.x()) + " " + std::to_string(hitPoint.y()) + " " + std::to_string(hitPoint.z());
-            ImGui::Text(hitText.c_str());
+			if(hitPoint.x() == 50.0f && hitPoint.y() == 0.0f && hitPoint.z() == 0.0f){
+				ImGui::Text("No square hit yet :(");
+			}
+			else{
+				ImGui::Text("Square Hit:");
+				std::string hitText = std::to_string(hitPoint.x()) + " " + std::to_string(hitPoint.y()) + " " + std::to_string(hitPoint.z());
+				ImGui::Text(hitText.c_str());
+			}
+			Vector4D gnHit = hitResults[0];
+			if(gnHit.x() == 0.0f && gnHit.y() == 0.0f && gnHit.z() == 0.0f) {
+				ImGui::Text("No GraphicsNode hit yet :(");
+			}
+			else{
+				ImGui::Text("GraphicsNode Hit:");
+				std::string hitText = std::to_string(gnHit.x()) + " " + std::to_string(gnHit.y()) + " " + std::to_string(gnHit.z());
+				ImGui::Text(hitText.c_str());
+			}
+			
 
             ImGui::Text("Average Frame Time %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
 			ImGui::Text("(%.1f FPS)", ImGui::GetIO().Framerate);
@@ -576,6 +610,67 @@ void ExampleApp::renderNano(NVGcontext * vg)
 	nvgRestore(vg);
 }
 
+void ExampleApp::setupCube(unsigned int& VBO, unsigned int& VAO)
+{
+	float vertices[] = {
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+
+	glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+}
+
+void ExampleApp::renderCube()
+{
+}
 
 } // namespace Example

@@ -37,6 +37,9 @@ public:
     std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 
+	Vector4D maxCoords;
+	Vector4D minCoords;
+
 	unsigned int vertexarray = 0;
 	unsigned int vertexbuffer = 0;
 	unsigned int indexbuffer = 0;
@@ -65,5 +68,9 @@ public:
     void setVertices(const std::vector<Vertex>& newVertices);
 
 	bool findMatchingVertexInMap(const Vertex& vertToFind, const std::map<Vertex, unsigned int>& vertMap, unsigned int& resultingIndex);
+
+	void generateBounds(std::vector<Vector4D> verts);
+
+	void getBounds(Vector4D& max, Vector4D& min);
 
 };

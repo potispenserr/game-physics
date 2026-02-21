@@ -13,8 +13,8 @@
 #include "GraphicsNode.h"
 #include "ShaderObject.h"
 #include "Camera.h"
-#include "Matrix4D.h"
 #include "Vector4D.h"
+#include "Matrix4D.h"
 #include "LightNode.h"
 #include "ray.h"
 namespace Example
@@ -33,11 +33,13 @@ public:
 	void Run();
 	private:
 	
-	void renderUI(Vector4D hitPoint);
+	void renderUI(Vector4D& hitPoint, std::vector<Vector4D>& hitResults);
 
 	void renderNano(NVGcontext * vg);
 
+	void setupCube(unsigned int& VBO, unsigned int& VAO);
 
+	void renderCube();
 
 	GLuint program;
 	GLuint vertexShader;
