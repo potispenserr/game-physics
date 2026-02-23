@@ -17,7 +17,7 @@ public:
 
     Vector4D getRayOrigin();
     Vector4D getRayDir();
-    Vector4D Intersect(Plane &plane);
+    bool Intersect(Plane& plane, Vector4D& hitPoint);
     bool Intersect(GraphicsNode &gn, Vector4D& hitPoint);
     Vector4D rayColor;
 

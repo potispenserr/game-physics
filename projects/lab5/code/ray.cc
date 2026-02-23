@@ -66,20 +66,31 @@ Vector4D Ray::getRayDir()
     return rayDirection;
 }
 
-Vector4D Ray::Intersect(Plane &plane)
+bool Ray::Intersect(Plane& plane, Vector4D& hitPoint)
 {
     Vector4D ray = rayOrigin - rayDirection;
     float d = Vector4D::dot(plane.getNormal(), plane.getPoint(0));
     if(Vector4D::dot(plane.getNormal(), ray) >= 0){
         std::cout << "early intersect exit" << "\n";
-        return Vector4D(0, 0, 0);
+        return false;
     }
+    Vector4D max = plane.getMaxBounds();
+    Vector4D min = plane.getMinBounds();
+
     float x = (d - Vector4D::dot(plane.getNormal(), rayOrigin)) / Vector4D::dot(plane.getNormal(), ray);
 
     Vector4D intersectPoint = rayOrigin + ray * x;
-    std::cout << "Ray hits plane at " << intersectPoint.x() << " " << intersectPoint.y() << " " << intersectPoint.z() << "\n";
 
-    return intersectPoint;
+    //check if intersect point is outside the bounds
+    if(intersectPoint.x() <= min.x() || intersectPoint.x() >= max.x() || intersectPoint.y() <= min.y() || intersectPoint.y() >= max.y()){
+        std::cout << "ray is outside the plane bounds" << "\n";
+        return false;
+    }
+
+    std::cout << "Ray hits plane at " << intersectPoint.x() << " " << intersectPoint.y() << " " << intersectPoint.z() << "\n";
+    hitPoint = intersectPoint;
+
+    return true;
 }
 
 bool Ray::Intersect(GraphicsNode &gn, Vector4D& hitPoint)

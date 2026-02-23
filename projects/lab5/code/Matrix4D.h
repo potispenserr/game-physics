@@ -196,7 +196,7 @@ public:
 	///
 	///matrix multiplication overload
 	///
-	Matrix4D operator*(Matrix4D& m)
+	Matrix4D operator*(Matrix4D m)
 	{
 		Matrix4D newmx;
 		newmx.mxarr[0][0] = mxarr[0][0] * m.mxarr[0][0] + mxarr[0][1] * m.mxarr[1][0] + mxarr[0][2] * m.mxarr[2][0] + mxarr[0][3] * m.mxarr[3][0];

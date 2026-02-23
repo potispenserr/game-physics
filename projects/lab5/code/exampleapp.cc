@@ -176,9 +176,14 @@ namespace Example
 		// gn2.setTexture(texPtr);s
 		// gn2.setTransform(Matrix4D());
 
+		Matrix4D gnTransform = Matrix4D::scale(Vector4D(0.5, 0.5, 0.5));
+		gnTransform = gnTransform * Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f));
 
-		gn.updateTransform(Matrix4D::scale(Vector4D(0.5, 0.5, 0.5)));
-		gn.updateTransform(Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f)));
+		//Gather the transforms into one matrix otherwise all hell breaks loose
+		gn.updateTransform(gnTransform);
+		
+		// gn.updateTransform(Matrix4D::scale(Vector4D(0.5, 0.5, 0.5)));
+		// gn.updateTransform(Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f)));
 
 		//gn.updateTransform(Matrix4D::roty(160));
 		// gn2.updateTransform(Matrix4D::scale(Vector4D(0.3, 0.3, 0.3)));
@@ -190,75 +195,14 @@ namespace Example
 		planePoints.push_back(Vector4D(0.5f, -0.5f, 0.0f));
 		planePoints.push_back(Vector4D(-0.5f, -0.5f, 0.0f));
 
-		Plane testPlane(planePoints);
 		std::vector<Plane> planes;
-
+		
 		Matrix4D squareTransform;
-
+		
 		Vector4D squareColor = {0.5, 0.5, 0.5, 1};
-
-		float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
-		};
-		float xMax = vertices[0];
-		float xMin = vertices[0];
-
-		float yMax = vertices[1];
-		float yMin = vertices[1];
-
-		float zMax = vertices[2];
-		float zMin = vertices[2];
-		for (int i = 8; i < 32; i += 8){
-			if(xMax < vertices[i]){
-				xMax = vertices[i];
-			}
-			if(xMin > vertices[i]){
-				xMin = vertices[i];
-			}
-
-		}
-		for (int i = 9; i < 32; i += 8){
-			if(yMax < vertices[i]){
-				yMax = vertices[i];
-			}
-			if(yMin > vertices[i]){
-				yMin = vertices[i];
-			}
-
-		}
-		for (int i = 10; i < 32; i += 8){
-			if(zMax < vertices[i]){
-				zMax = vertices[i];
-			}
-			if(zMin > vertices[i]){
-				zMin = vertices[i];
-			}
-
-		} 
-
-		unsigned int indices[] = {
-			0, 1, 3, 
-			1, 2, 3 
-		};
-		unsigned int VBO, VAO, EBO;
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
-
-		glBindVertexArray(VAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
+		
+		
+		Plane testPlane(planePoints);
 
 		//test ray
 		std::vector<Ray> rays;
@@ -294,7 +238,9 @@ namespace Example
 		std::vector<Vector4D> hitResults;
 		hitResults.push_back(Vector4D(0.0f, 0.0f, 0.0f));
 
-		Vector4D squareHit = {50.0f, 0.0f}; 
+		Vector4D squareHit = {50.0f, 0.0f};
+		
+		Vector4D hitVisualizerPosition;
 		
 
 		//render loop
@@ -429,12 +375,18 @@ namespace Example
 					const float randomColorR = (std::rand() % 255) / 255.0f;
 					const float randomColorG = (std::rand() % 255) / 255.0f;
 					const float randomColorB = (std::rand() % 255) / 255.0f;
-					rayWorld.rayColor = Vector4D(randomColorR, randomColorG, randomColorB, 1.0f);
-					Vector4D hitPoint = rayWorld.Intersect(testPlane);
-					if(hitPoint.x() >= xMin && hitPoint.x() <= xMax && hitPoint.y() >= yMin && hitPoint.y() <= yMax){
+					rayWorld.rayColor = Vector4D(1.0f, 1.0f, 1.0f, 1.0f);
+					Vector4D hitPoint;
+					bool isSquareHit = rayWorld.Intersect(testPlane, hitPoint);
+					if(isSquareHit){
 						std::cout << "ray hit inside the square" << "\n";
+						hitVisualizerPosition = hitPoint;
 						squareHit = hitPoint;
-						squareColor = Vector4D(0.3f, 0, 0, 1);
+						squareColor = Vector4D(0.0f, 0.1f, 0.0f, 1);
+
+						//turn intersecting ray yellow
+						rayWorld.rayColor = Vector4D(131.0f/255.0f, 17.0f/255.0f, 252.0f/255.0f);
+
 					}
 					Vector4D gnHitPoint;
 					bool gnHit = false;
@@ -442,10 +394,12 @@ namespace Example
 					if(gnHit == true){
 						std::cout << "gn hit" << "\n";
 						std::cout << gnHitPoint.x() << " " << gnHitPoint.y() << " " << gnHitPoint.z() << "\n";
+						//turn intersecting ray red
+						rayWorld.rayColor = Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+						hitVisualizerPosition = gnHitPoint;
+
 					}
 					hitResults[0] = gnHitPoint;
-					//gn.setTransform(Matrix4D::scale(Vector4D(0.1, 0.1, 0.1)));
-					//gn.updateTransform(Matrix4D::translation(hitPoint));
 					rays.push_back(rayWorld);
 				}
 				});
@@ -506,10 +460,7 @@ namespace Example
 			squareShader.get()->setMat4(std::string("view"), cam.getView());
 			squareShader.get()->setMat4(std::string("projection"), projection);
 			squareShader.get()->setVec4(std::string("color"), squareColor);
-			//Square Draw
-			glBindVertexArray(VAO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			testPlane.draw();
 			
 
 			Matrix4D rayTransform;
@@ -526,7 +477,7 @@ namespace Example
 			
 			// draw intersection point cube
 			cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
-			Matrix4D newTrans = cubeTransform.translation(squareHit);
+			Matrix4D newTrans = cubeTransform.translation(hitVisualizerPosition);
 			cubeTransform = cubeTransform * newTrans;
 			pointLightShader.get()->use();
 			pointLightShader.get()->setMat4(std::string("model"), cubeTransform);
