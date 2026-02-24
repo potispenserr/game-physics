@@ -33,7 +33,7 @@ public:
 	void Run();
 	private:
 	
-	void renderUI(Vector4D& hitPoint, std::vector<Vector4D>& hitResults);
+	void renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults);
 
 	void renderNano(NVGcontext * vg);
 

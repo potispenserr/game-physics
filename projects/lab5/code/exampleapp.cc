@@ -235,8 +235,7 @@ namespace Example
 		float lastY = 384.0f;
 		bool firstRotation = true;
 
-		std::vector<Vector4D> hitResults;
-		hitResults.push_back(Vector4D(0.0f, 0.0f, 0.0f));
+		std::map<std::string, Vector4D> hitResults;
 
 		Vector4D squareHit = {50.0f, 0.0f};
 		
@@ -367,6 +366,8 @@ namespace Example
 					double mouseY;
 					window->GetCursorPosition(&mouseX, &mouseY);
 					std::cout << "MouseX:" << mouseX << " MouseY: " << mouseY << "\n";
+					hitResults.clear(); 
+
 					Ray rayWorld;
 					rayWorld.rayCast(mouseX, mouseY, cam.getView(), projection, width, height);
 					//std::cout << "x: " << rayWorld.x() << "y: " << rayWorld.y() << "z: " << rayWorld.z() << "\n";
@@ -379,27 +380,50 @@ namespace Example
 					Vector4D hitPoint;
 					bool isSquareHit = rayWorld.Intersect(testPlane, hitPoint);
 					if(isSquareHit){
-						std::cout << "ray hit inside the square" << "\n";
-						hitVisualizerPosition = hitPoint;
-						squareHit = hitPoint;
-						squareColor = Vector4D(0.0f, 0.1f, 0.0f, 1);
-
-						//turn intersecting ray yellow
-						rayWorld.rayColor = Vector4D(131.0f/255.0f, 17.0f/255.0f, 252.0f/255.0f);
+						hitResults.insert({"Square", hitPoint});
+						
 
 					}
 					Vector4D gnHitPoint;
 					bool gnHit = false;
 					gnHit = rayWorld.Intersect(gn, gnHitPoint);
 					if(gnHit == true){
-						std::cout << "gn hit" << "\n";
-						std::cout << gnHitPoint.x() << " " << gnHitPoint.y() << " " << gnHitPoint.z() << "\n";
-						//turn intersecting ray red
-						rayWorld.rayColor = Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
-						hitVisualizerPosition = gnHitPoint;
+						// std::cout << "gn hit" << "\n";
+						// std::cout << gnHitPoint.x() << " " << gnHitPoint.y() << " " << gnHitPoint.z() << "\n";
+						
+						hitResults.insert({"GN", gnHitPoint});
 
 					}
-					hitResults[0] = gnHitPoint;
+
+					if(hitResults.size() > 1){
+						auto it = hitResults.begin();
+						auto nearestCam = std::make_pair(it->first, it->second);
+						for (it; it != hitResults.end(); ++it) {
+							std::cout << it->first << ", " << it->second.x() << " " << it->second.y() << "" << it->second.z() << '\n';
+							if(nearestCam.second.z() < it->second.z()){
+								nearestCam = std::make_pair(it->first, it->second);
+							}
+						}
+						std::cout << "The thing nearest cam was " << nearestCam.first << "\n";
+						hitResults.clear();
+						hitResults.insert(nearestCam);
+						hitVisualizerPosition = nearestCam.second;
+						//turn intersecting ray red
+						
+					}
+					if(hitResults.find("Square") != hitResults.end()){
+						std::cout << "ray hit inside the square" << "\n";
+						hitVisualizerPosition = hitResults["Square"];
+						squareColor = Vector4D(0.0f, 0.1f, 0.0f, 1);
+					}
+					
+					if(hitResults.find("GN") != hitResults.end()){
+						std::cout << "ray hit GN" << "\n";
+						hitVisualizerPosition = hitResults["GN"];
+						
+					}
+					
+					rayWorld.rayColor = Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
 					rays.push_back(rayWorld);
 				}
 				});
@@ -451,9 +475,11 @@ namespace Example
 			gn.draw(cam, projection, light.lightPos);
 			lightCube.draw(cam, projection, light.lightPos);
 			//gn2.draw(cam, projection, light.lightPos);
+			
 
 
 			//squareTransform = squareTransform.translation(testPlane.getPoint(0));
+			
 
 			squareShader.get()->use();
 			squareShader.get()->setMat4(std::string("model"), squareTransform);
@@ -508,7 +534,7 @@ namespace Example
 		glfwTerminate();
 	}
 
-    void ExampleApp::renderUI(Vector4D& hitPoint, std::vector<Vector4D>& hitResults)
+    void ExampleApp::renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults)
     {
         ImGui_ImplGlfwGL3_NewFrame();
 		bool show_demo_window = true;
@@ -518,22 +544,28 @@ namespace Example
             static float f = 0.0f;
             static int counter = 0;
             ImGui::Begin("Hello, world!");
-			if(hitPoint.x() == 50.0f && hitPoint.y() == 0.0f && hitPoint.z() == 0.0f){
-				ImGui::Text("No square hit yet :(");
-			}
-			else{
+			if(hitResults.find("Square") != hitResults.end()){
+				Vector4D squareHit = hitResults["Square"];
 				ImGui::Text("Square Hit:");
-				std::string hitText = std::to_string(hitPoint.x()) + " " + std::to_string(hitPoint.y()) + " " + std::to_string(hitPoint.z());
+				std::string hitText = std::to_string(squareHit.x()) + " " + std::to_string(squareHit.y()) + " " + std::to_string(squareHit.z());
 				ImGui::Text(hitText.c_str());
 			}
-			Vector4D gnHit = hitResults[0];
-			if(gnHit.x() == 0.0f && gnHit.y() == 0.0f && gnHit.z() == 0.0f) {
-				ImGui::Text("No GraphicsNode hit yet :(");
-			}
+
 			else{
+				ImGui::Text("No square hit yet :(");
+			}
+
+			if(hitResults.find("GN") != hitResults.end()){
+				Vector4D gnHit = hitResults["GN"];
 				ImGui::Text("GraphicsNode Hit:");
 				std::string hitText = std::to_string(gnHit.x()) + " " + std::to_string(gnHit.y()) + " " + std::to_string(gnHit.z());
 				ImGui::Text(hitText.c_str());
+
+			}
+
+			else{
+				ImGui::Text("No GraphicsNode hit yet :(");
+				
 			}
 			
 
