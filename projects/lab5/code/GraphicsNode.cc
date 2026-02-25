@@ -11,6 +11,7 @@ GraphicsNode::GraphicsNode(MeshResource newMesh, TextureResource newTexture, Sha
 	texture = std::make_shared<TextureResource>(newTexture);
 	shader = std::make_shared<ShaderObject>(newShader);
 	transform = newTransform;
+	initAABBRendering();
 }
 
 GraphicsNode::GraphicsNode(GraphicsNode& gn)
@@ -19,6 +20,8 @@ GraphicsNode::GraphicsNode(GraphicsNode& gn)
 	texture = gn.texture;
 	shader = gn.shader;
 	transform = gn.transform;
+	shader = gn.shader;
+	initAABBRendering();
 
 }
 
@@ -45,6 +48,7 @@ std::shared_ptr<ShaderObject>& GraphicsNode::getShader()
 void GraphicsNode::setMesh(std::shared_ptr<MeshResource>& newMesh)
 {
 	mesh = newMesh;
+	initAABBRendering();
 }
 
 void GraphicsNode::setTexture(std::shared_ptr<TextureResource>& newTexture)
@@ -119,6 +123,61 @@ void GraphicsNode::initTexture(std::string path) {
 
 }
 
+void GraphicsNode::initAABBRendering()
+{
+	Vector4D& max = mesh.get()->maxCoords;
+	Vector4D& min = mesh.get()->minCoords;
+	float AABBVerts[] = {
+		min.x() * 1.1f, max.y() * 1.1f, min.z() * 1.1f, // top front left
+		min.x() * 1.1f, max.y() * 1.1f, max.z() * 1.1f, // top back left
+
+		min.x() * 1.1f, min.y() * 1.1f, min.z() * 1.1f, // bottom front left
+		min.x() * 1.1f, min.y() * 1.1f, max.z() * 1.1f, // bottom back left
+
+		max.x() * 1.1f, max.y() * 1.1f, min.z() * 1.1f, // top front right
+		max.x() * 1.1f, max.y() * 1.1f, max.z() * 1.1f, // top back right
+
+		max.x() * 1.1f, min.y() * 1.1f, min.z() * 1.1f, // bottom front right
+		max.x() * 1.1f, min.y() * 1.1f, max.z() * 1.1f  // bottom back right
+
+
+	};
+
+	unsigned int indices[] = {
+		0, 1, 2, // left face triangles
+		2, 3, 1,
+
+		2, 6, 3, // bottom face triangles
+		3, 7, 6, 
+
+		2, 0, 4, // front face triangles
+		2, 6, 4,
+
+		3, 1, 5, // back face triangles
+		3, 7, 5,
+
+		1, 0, 4, // top face triangles
+		1, 5, 4,
+
+		7, 5, 4, // right face triangles
+		7, 6, 4
+	};
+	glGenVertexArrays(1, &AABBVAO);
+    glGenBuffers(1, &AABBVBO);
+    glGenBuffers(1, &AABBEBO);
+
+    glBindVertexArray(AABBVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, AABBVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(AABBVerts), AABBVerts, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AABBEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+}
 
 void GraphicsNode::draw(Camera cam, Matrix4D projection, Vector4D lightPosition)
 {	
@@ -168,6 +227,14 @@ void GraphicsNode::draw(Camera cam, Matrix4D projection, Vector4D lightPosition)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.get()->indexbuffer);
 	glDrawElements(GL_TRIANGLES, mesh.get()->indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, 0, mesh.get()->verticies.size());
+
+	if(AABBRenderState == true){
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+		glBindVertexArray(AABBVAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AABBEBO);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+	}
 
 }
 

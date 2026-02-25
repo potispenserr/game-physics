@@ -48,12 +48,11 @@ void Ray::initializeRay()
 
 void Ray::draw()
 {
-    // glBindVertexArray(rayVAO);
-    // glDrawArrays(GL_LINES, 0, 2);
     glBegin(GL_LINES);
 	glVertex3f(rayOrigin.x(), rayOrigin.y(), rayOrigin.z());
 	glVertex3f(rayDirection.x(), rayDirection.y(), rayDirection.z());
 	glEnd();
+
 }
 
 Vector4D Ray::getRayOrigin()

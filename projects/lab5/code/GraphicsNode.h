@@ -37,6 +37,8 @@ public:
 
 	void initTexture(std::string path);
 
+	void initAABBRendering();
+	bool AABBRenderState = false;
 
 	void draw(Camera cam, Matrix4D projection, Vector4D lightPosition);
 
@@ -53,8 +55,9 @@ private:
 	std::shared_ptr<TextureResource> normalMap;
 	std::shared_ptr<ShaderObject> shader;
 	Matrix4D transform;
-	Vector4D minCoords;
-	Vector4D maxCoords;
+	unsigned int AABBVAO;
+	unsigned int AABBVBO;
+	unsigned int AABBEBO;
 
 
 };

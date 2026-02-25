@@ -252,7 +252,7 @@ namespace Example
 			deltaTime = currentFrame - lastFrame;	
 			lastFrame = currentFrame;
 
-			this->renderUI(squareHit, hitResults);
+			this->renderUI(squareHit, hitResults, gn.AABBRenderState);
 
 			window->SetKeyPressFunction([this, &light](int32 asciikey, int32 argb, int32 status, int32 mod)
 			{
@@ -372,6 +372,8 @@ namespace Example
 					rayWorld.rayCast(mouseX, mouseY, cam.getView(), projection, width, height);
 					//std::cout << "x: " << rayWorld.x() << "y: " << rayWorld.y() << "z: " << rayWorld.z() << "\n";
 					//Ray newRay = Ray(Vector4D(rayWorld.x(), rayWorld.y() , rayWorld.z()), Vector4D(rayWorld.x() * 5.0f, rayWorld.y() * 5.0f, rayWorld.z() * 5.0f));
+    				std::cout << "x: " << rayWorld.getRayDir().x() << "y: " << rayWorld.getRayDir().y() << "z: " << rayWorld.getRayDir().z() << "\n";
+
 					std::srand(time(0));
 					const float randomColorR = (std::rand() % 255) / 255.0f;
 					const float randomColorG = (std::rand() % 255) / 255.0f;
@@ -502,6 +504,7 @@ namespace Example
 			}
 			
 			// draw intersection point cube
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
 			cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
 			Matrix4D newTrans = cubeTransform.translation(hitVisualizerPosition);
 			cubeTransform = cubeTransform * newTrans;
@@ -511,6 +514,8 @@ namespace Example
 			pointLightShader.get()->setMat4(std::string("projection"), projection);
 			glBindVertexArray(cubeVAO);
         	glDrawArrays(GL_TRIANGLES, 0, 36);
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+
 
 
 			ImGui::Render();
@@ -534,7 +539,7 @@ namespace Example
 		glfwTerminate();
 	}
 
-    void ExampleApp::renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults)
+    void ExampleApp::renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults, bool& AABBRenderState)
     {
         ImGui_ImplGlfwGL3_NewFrame();
 		bool show_demo_window = true;
@@ -567,6 +572,17 @@ namespace Example
 				ImGui::Text("No GraphicsNode hit yet :(");
 				
 			}
+
+			if (ImGui::Button("Render AABB")){
+                if(AABBRenderState == true){
+					AABBRenderState = false;
+				}
+				else {
+					AABBRenderState = true;
+				}
+			}
+			ImGui::SameLine();
+            ImGui::Text("AABB Rendering = %d", AABBRenderState);
 			
 
             ImGui::Text("Average Frame Time %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
