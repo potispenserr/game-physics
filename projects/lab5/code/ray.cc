@@ -94,8 +94,8 @@ bool Ray::Intersect(Plane& plane, Vector4D& hitPoint)
 
 bool Ray::Intersect(GraphicsNode &gn, Vector4D& hitPoint)
 {
-    Vector4D max = gn.getMesh().get()->maxCoords;
-    Vector4D min = gn.getMesh().get()->minCoords;
+    Vector4D max = gn.maxBounds;
+    Vector4D min = gn.minBounds;
 
     float xDivisor = (rayDirection.x() == 0.0f) ? 0.00001f : rayDirection.x();
     float yDivisor = (rayDirection.y() == 0.0f) ? 0.00001f : rayDirection.y();

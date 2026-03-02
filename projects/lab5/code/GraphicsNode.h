@@ -15,7 +15,7 @@ class GraphicsNode
 public:
 	GraphicsNode();
 	GraphicsNode(MeshResource newMesh, TextureResource newTexture, ShaderObject newShader, Matrix4D newTransform);
-	GraphicsNode(GraphicsNode& gn);
+	GraphicsNode(const GraphicsNode& gn);
 
 
 
@@ -38,7 +38,7 @@ public:
 	void initTexture(std::string path);
 
 	void initAABBRendering();
-	bool AABBRenderState = false;
+	bool AABBRenderState = true;
 
 	void draw(Camera cam, Matrix4D projection, Vector4D lightPosition);
 
@@ -46,8 +46,8 @@ public:
 
 	void clearMemory();
 
-
-	
+	Vector4D maxBounds;
+	Vector4D minBounds;
 
 private:
 	std::shared_ptr<MeshResource> mesh;
@@ -55,6 +55,7 @@ private:
 	std::shared_ptr<TextureResource> normalMap;
 	std::shared_ptr<ShaderObject> shader;
 	Matrix4D transform;
+	
 	unsigned int AABBVAO;
 	unsigned int AABBVBO;
 	unsigned int AABBEBO;

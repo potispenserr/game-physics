@@ -11,16 +11,20 @@ GraphicsNode::GraphicsNode(MeshResource newMesh, TextureResource newTexture, Sha
 	texture = std::make_shared<TextureResource>(newTexture);
 	shader = std::make_shared<ShaderObject>(newShader);
 	transform = newTransform;
+	maxBounds = mesh.get()->maxCoords;
+	minBounds = mesh.get()->minCoords;
 	initAABBRendering();
 }
 
-GraphicsNode::GraphicsNode(GraphicsNode& gn)
+GraphicsNode::GraphicsNode(const GraphicsNode& gn)
 {
 	mesh = gn.mesh;
 	texture = gn.texture;
 	shader = gn.shader;
 	transform = gn.transform;
 	shader = gn.shader;
+	maxBounds = gn.maxBounds;
+	minBounds = gn.minBounds;
 	initAABBRendering();
 
 }
@@ -48,6 +52,8 @@ std::shared_ptr<ShaderObject>& GraphicsNode::getShader()
 void GraphicsNode::setMesh(std::shared_ptr<MeshResource>& newMesh)
 {
 	mesh = newMesh;
+	maxBounds = mesh.get()->maxCoords;
+	minBounds = mesh.get()->minCoords;
 	initAABBRendering();
 }
 
@@ -240,28 +246,26 @@ void GraphicsNode::draw(Camera cam, Matrix4D projection, Vector4D lightPosition)
 
 void GraphicsNode::updateBounds()
 {	
-	Vector4D& maxCoords = mesh.get()->maxCoords;
-	Vector4D& minCoords = mesh.get()->minCoords;
 
 	Matrix4D maxMatrix;
-	maxMatrix[0][0] = maxCoords[0];
-	maxMatrix[0][1] = maxCoords[1];
-	maxMatrix[0][2] = maxCoords[2];
-	maxMatrix[0][3] = maxCoords[3];
+	maxMatrix[0][0] = maxBounds[0];
+	maxMatrix[0][1] = maxBounds[1];
+	maxMatrix[0][2] = maxBounds[2];
+	maxMatrix[0][3] = maxBounds[3];
 
 	maxMatrix = maxMatrix * transform;
 
-	maxCoords = {maxMatrix[0][0], maxMatrix[0][1], maxMatrix[0][2], maxMatrix[0][3]};
+	maxBounds = {maxMatrix[0][0], maxMatrix[0][1], maxMatrix[0][2], maxMatrix[0][3]};
 
 	Matrix4D minMatrix;
-	minMatrix[0][0] = minCoords[0];
-	minMatrix[0][1] = minCoords[1];
-	minMatrix[0][2] = minCoords[2];
-	minMatrix[0][3] = minCoords[3];
+	minMatrix[0][0] = minBounds[0];
+	minMatrix[0][1] = minBounds[1];
+	minMatrix[0][2] = minBounds[2];
+	minMatrix[0][3] = minBounds[3];
 
 	minMatrix = minMatrix * transform;
 
-	minCoords = {minMatrix[0][0], minMatrix[0][1], minMatrix[0][2], minMatrix[0][3]};
+	minBounds = {minMatrix[0][0], minMatrix[0][1], minMatrix[0][2], minMatrix[0][3]};
 
 }
 

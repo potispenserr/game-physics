@@ -55,6 +55,8 @@ public:
 	float&  z() { return vecarray[2]; }
 	float&  w() { return vecarray[3]; }
 
+	const float get(int i) const { return vecarray[i];};
+
 	float* getVector() { return vecarray; }
 
 	///

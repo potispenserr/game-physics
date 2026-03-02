@@ -81,29 +81,29 @@ public:
 
 
 
-	Matrix4D(Matrix4D& m)
+	Matrix4D(const Matrix4D& m)
 	{
 
 
-		mxarr[0][0] = m.mxarr[0][0];
-		mxarr[0][1] = m.mxarr[0][1];
-		mxarr[0][2] = m.mxarr[0][2];
-		mxarr[0][3] = m.mxarr[0][3];
+		mxarr[0][0] = m.get(0);
+		mxarr[0][1] = m.get(1);
+		mxarr[0][2] = m.get(2);
+		mxarr[0][3] = m.get(3);
 
-		mxarr[1][0] = m.mxarr[1][0];
-		mxarr[1][1] = m.mxarr[1][1];
-		mxarr[1][2] = m.mxarr[1][2];
-		mxarr[1][3] = m.mxarr[1][3];
+		mxarr[1][0] = m.get(4);
+		mxarr[1][1] = m.get(5);
+		mxarr[1][2] = m.get(6);
+		mxarr[1][3] = m.get(7);
 
-		mxarr[2][0] = m.mxarr[2][0];
-		mxarr[2][1] = m.mxarr[2][1];
-		mxarr[2][2] = m.mxarr[2][2];
-		mxarr[2][3] = m.mxarr[2][3];
+		mxarr[2][0] = m.get(8);
+		mxarr[2][1] = m.get(9);
+		mxarr[2][2] = m.get(10);
+		mxarr[2][3] = m.get(11);
 
-		mxarr[3][0] = m.mxarr[3][0];
-		mxarr[3][1] = m.mxarr[3][1];
-		mxarr[3][2] = m.mxarr[3][2];
-		mxarr[3][3] = m.mxarr[3][3];
+		mxarr[3][0] = m.get(12);
+		mxarr[3][1] = m.get(13);
+		mxarr[3][2] = m.get(14);
+		mxarr[3][3] = m.get(15);
 
 
 	}
@@ -117,11 +117,11 @@ public:
 		}
 		return mxarr[i][j];
 	}
-	float get(int i) {
+	const float get(int i) const {
 		int row = i / 4;
 		int col = i % 4;
 		
-		return mxarr[row][col];
+		return mxarr[row].get(col);
 	}
 
 	float x() {
@@ -146,7 +146,7 @@ public:
 	void set(int i, float val) {
 			int row = i / 4;
 			int col = i % 4;
-			mxarr[row][col] = val;
+			mxarr[row].set(col, val);
 		
 	}
 

@@ -167,20 +167,33 @@ namespace Example
 		gn.setMesh(objectMesh);
 		gn.setShader(lightShader);
 		gn.setTexture(texPtr);
-		gn.setNormalMap(normalMapPtr);
+		//gn.setNormalMap(normalMapPtr);
 		gn.initTexture("./resources/container45.jpg");
 		gn.setTransform(Matrix4D());
 
-		// gn2.setMesh(objectMesh);
-		// gn2.setShader(lightShader);
-		// gn2.setTexture(texPtr);s
-		// gn2.setTransform(Matrix4D());
+		gn2.setMesh(objectMesh);
+		gn2.setShader(lightShader);
+		gn2.setTexture(texPtr);
+		gn2.setTransform(Matrix4D());
 
 		Matrix4D gnTransform = Matrix4D::scale(Vector4D(0.5, 0.5, 0.5));
 		gnTransform = gnTransform * Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f));
 
 		//Gather the transforms into one matrix otherwise all hell breaks loose
 		gn.updateTransform(gnTransform);
+
+		Matrix4D gn2Transform = Matrix4D::scale(Vector4D(0.5, 0.5, 0.5)) * Matrix4D::translation(Vector4D(2.9f, 0.0f, 0.0f));
+		gn2.updateTransform(gn2Transform);
+
+		std::vector<GraphicsNode> gnList;
+		gnList.push_back(gn);
+		gnList.push_back(gn2);
+
+		std::cout << "GN1 Max:" << gnList[0].maxBounds.x() << " " << gnList[0].maxBounds.y() << " " << gnList[0].maxBounds.z() << "\n";
+		std::cout << "GN2 Max:" << gnList[1].maxBounds.x() << " " << gnList[1].maxBounds.y() << " " << gnList[1].maxBounds.z() << "\n";
+
+		std::cout << "GN1 Min:" << gnList[0].minBounds.x() << " " << gnList[0].minBounds.y() << " " << gnList[0].minBounds.z() << "\n";
+		std::cout << "GN2 Min:" << gnList[1].minBounds.x() << " " << gnList[1].minBounds.y() << " " << gnList[1].minBounds.z() << "\n";
 		
 		// gn.updateTransform(Matrix4D::scale(Vector4D(0.5, 0.5, 0.5)));
 		// gn.updateTransform(Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f)));
@@ -240,6 +253,8 @@ namespace Example
 		Vector4D squareHit = {50.0f, 0.0f};
 		
 		Vector4D hitVisualizerPosition;
+
+		std::vector<GraphicsNode> collisionList;
 		
 
 		//render loop
@@ -253,6 +268,48 @@ namespace Example
 			lastFrame = currentFrame;
 
 			this->renderUI(squareHit, hitResults, gn.AABBRenderState);
+
+			for(int i = 1; i < gnList.size(); i++){
+				// check if collisions are happening on the AABBs right side
+				if(gnList[i - 1].maxBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].maxBounds.x() < gnList[i].maxBounds.x()){
+					collisionList.push_back(gnList[i - 1]);
+					collisionList.push_back(gnList[i]);
+					std::cout << "Collision right" << "\n";
+				}
+				// check if collisions are not happening on the AABBs left side
+				else if(gnList[i - 1].minBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].minBounds.x() < gnList[i].maxBounds.x()){
+					collisionList.push_back(gnList[i - 1]);
+					collisionList.push_back(gnList[i]);
+					std::cout << "Collision left" << "\n";
+				}
+				// top side this time
+				else if(gnList[i - 1].maxBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].maxBounds.y() < gnList[i].maxBounds.y()){
+					collisionList.push_back(gnList[i - 1]);
+					collisionList.push_back(gnList[i]);
+					std::cout << "Collision top" << "\n";
+				}
+				// bottom side
+				else if(gnList[i - 1].minBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].minBounds.y() < gnList[i].maxBounds.y()){
+					collisionList.push_back(gnList[i - 1]);
+					collisionList.push_back(gnList[i]);
+					std::cout << "Collision bottom" << "\n";
+				}
+				// it's front side time
+				else if(gnList[i - 1].maxBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].maxBounds.z() < gnList[i].maxBounds.z()){
+					collisionList.push_back(gnList[i - 1]);
+					collisionList.push_back(gnList[i]);
+					std::cout << "Collision front" << "\n";
+				}
+				// now it's back side collisions
+				else if(gnList[i - 1].minBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].minBounds.z() < gnList[i].maxBounds.z()){
+					collisionList.push_back(gnList[i - 1]);
+					collisionList.push_back(gnList[i]);
+					std::cout << "Collision back" << "\n";
+				}
+
+			}
+
+
 
 			window->SetKeyPressFunction([this, &light](int32 asciikey, int32 argb, int32 status, int32 mod)
 			{
@@ -383,7 +440,7 @@ namespace Example
 					bool isSquareHit = rayWorld.Intersect(testPlane, hitPoint);
 					if(isSquareHit){
 						hitResults.insert({"Square", hitPoint});
-						
+						rayWorld.rayColor = Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
 
 					}
 					Vector4D gnHitPoint;
@@ -394,6 +451,7 @@ namespace Example
 						// std::cout << gnHitPoint.x() << " " << gnHitPoint.y() << " " << gnHitPoint.z() << "\n";
 						
 						hitResults.insert({"GN", gnHitPoint});
+						rayWorld.rayColor = Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
 
 					}
 
@@ -411,8 +469,10 @@ namespace Example
 						hitResults.insert(nearestCam);
 						hitVisualizerPosition = nearestCam.second;
 						//turn intersecting ray red
+						rayWorld.rayColor = Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
 						
 					}
+					
 					if(hitResults.find("Square") != hitResults.end()){
 						std::cout << "ray hit inside the square" << "\n";
 						hitVisualizerPosition = hitResults["Square"];
@@ -424,8 +484,9 @@ namespace Example
 						hitVisualizerPosition = hitResults["GN"];
 						
 					}
-					
-					rayWorld.rayColor = Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+					if(gnHit == false && isSquareHit == false){
+						rayWorld.rayColor = Vector4D(1.0f, 1.0f, 1.0f, 1.0f);
+					}
 					rays.push_back(rayWorld);
 				}
 				});
@@ -476,7 +537,7 @@ namespace Example
 			light.updateLighting(cam, projection, lightCube);
 			gn.draw(cam, projection, light.lightPos);
 			lightCube.draw(cam, projection, light.lightPos);
-			//gn2.draw(cam, projection, light.lightPos);
+			gn2.draw(cam, projection, light.lightPos);
 			
 
 
@@ -519,6 +580,7 @@ namespace Example
 
 
 			ImGui::Render();
+			collisionList.clear();
 
 
 			///     _             _          __  __ 
