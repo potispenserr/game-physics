@@ -275,36 +275,51 @@ namespace Example
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision right" << "\n";
+					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					if(collision == true){
+						std::cout << "SAT on AABBS is true" << "\n";
+
+					}
 				}
 				// check if collisions are not happening on the AABBs left side
 				else if(gnList[i - 1].minBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].minBounds.x() < gnList[i].maxBounds.x()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision left" << "\n";
+					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					std::cout << "SAT on AABBS is " << collision << "\n";
 				}
 				// top side this time
 				else if(gnList[i - 1].maxBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].maxBounds.y() < gnList[i].maxBounds.y()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision top" << "\n";
+					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					std::cout << "SAT on AABBS is " << collision << "\n";
 				}
 				// bottom side
 				else if(gnList[i - 1].minBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].minBounds.y() < gnList[i].maxBounds.y()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision bottom" << "\n";
+					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					std::cout << "SAT on AABBS is " << collision << "\n";
 				}
 				// it's front side time
 				else if(gnList[i - 1].maxBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].maxBounds.z() < gnList[i].maxBounds.z()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision front" << "\n";
+					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					std::cout << "SAT on AABBS is " << collision << "\n";
 				}
 				// now it's back side collisions
 				else if(gnList[i - 1].minBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].minBounds.z() < gnList[i].maxBounds.z()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision back" << "\n";
+					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					std::cout << "SAT on AABBS is " << collision << "\n";
 				}
 
 			}
@@ -732,6 +747,80 @@ void ExampleApp::setupCube(unsigned int& VBO, unsigned int& VAO)
 
 void ExampleApp::renderCube()
 {
+}
+
+Interval ExampleApp::getInterval(const GraphicsNode &gn, const Vector4D axis)
+{
+	Vector4D max = gn.maxBounds;
+	Vector4D min = gn.minBounds;
+	//AABB vertices
+	Vector4D vertices[8] = {
+		Vector4D(min.x(), max.y(), max.z()),
+		Vector4D(min.x(), max.y(), min.z()),
+		Vector4D(min.x(), min.y(), max.z()),
+		Vector4D(min.x(), min.y(), min.z()),
+
+		Vector4D(max.x(), max.y(), max.z()),
+		Vector4D(max.x(), max.y(), min.z()),
+		Vector4D(max.x(), min.y(), max.z()),
+		Vector4D(max.x(), min.y(), min.z())		
+	};
+	Interval result;
+	result.max = Vector4D::dot(axis, vertices[0]);
+	result.min = Vector4D::dot(axis, vertices[0]);
+
+	for (int i = 0; i < 8; ++i){
+		float projection = Vector4D::dot(axis, vertices[i]);
+		result.min = (projection < result.min) ? projection : result.min;
+		result.max = (projection > result.max) ? projection : result.max;
+	}
+
+
+    return result;
+}
+
+bool ExampleApp::overlapingOnAxis(const GraphicsNode &gn, const GraphicsNode &gn2, const Vector4D &axis, float& depth, bool& isNegative)
+{
+	Interval first = getInterval(gn, axis);
+	Interval second = getInterval(gn2, axis);
+	float negativePen = second.max - first.max;
+	float positivePen = first.max - second.max;
+	depth = std::min(negativePen, positivePen);
+	isNegative = negativePen > positivePen;
+
+    return ((second.min <= first.max) && (first.min <= second.max));
+}
+
+bool ExampleApp::SATOnAABBs(const GraphicsNode &gn, const GraphicsNode &gn2)
+{
+	Vector4D testAxis[15] = {
+		Vector4D(1.0f, 0.0f, 0.0f),
+		Vector4D(0.0f, 1.0f, 0.0f),
+		Vector4D(0.0f, 0.0f, 1.0f),
+		Vector4D(1.0f, 0.0f, 0.0f),
+		Vector4D(0.0f, 1.0f, 0.0f),
+		Vector4D(0.0f, 0.0f, 1.0f),
+	};
+	for (int i = 0; i < 3; ++i){
+		testAxis[6 + i * 3 + 0] = Vector4D::cross(testAxis[i], testAxis[0]);
+		testAxis[6 + i * 3 + 1] = Vector4D::cross(testAxis[i], testAxis[1]);
+		testAxis[6 + i * 3 + 2] = Vector4D::cross(testAxis[i], testAxis[2]);
+	}
+	float resultantPenDepth;
+	bool negativePenetration;
+	float smallestPenDepth = __FLT_MAX__;
+	Vector4D smallestPenAxis;
+	for (int i = 0; i < 15; ++i){
+		if(!overlapingOnAxis(gn, gn2, testAxis[i], resultantPenDepth, negativePenetration)){
+			return false;
+		}
+
+		if(resultantPenDepth < smallestPenDepth) {
+			smallestPenDepth = resultantPenDepth;
+			smallestPenAxis = testAxis[i] * (negativePenetration ? -1.0f : 1.0f);
+		}
+	}
+    return true;
 }
 
 } // namespace Example

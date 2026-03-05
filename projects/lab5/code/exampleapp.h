@@ -17,6 +17,11 @@
 #include "Matrix4D.h"
 #include "LightNode.h"
 #include "ray.h"
+typedef struct Interval {
+	float max;
+	float min;
+} Interval;
+
 namespace Example
 {
 class ExampleApp : public Core::App
@@ -40,6 +45,10 @@ public:
 	void setupCube(unsigned int& VBO, unsigned int& VAO);
 
 	void renderCube();
+
+	Interval getInterval(const GraphicsNode& gn, const Vector4D axis);
+	bool overlapingOnAxis(const GraphicsNode& gn, const GraphicsNode& gn2, const Vector4D& axis, float& depth, bool& isNegative);
+	bool SATOnAABBs(const GraphicsNode& gn, const GraphicsNode& gn2);
 
 	GLuint program;
 	GLuint vertexShader;
