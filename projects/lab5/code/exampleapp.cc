@@ -275,9 +275,9 @@ namespace Example
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision right" << "\n";
-					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					if(collision == true){
-						std::cout << "SAT on AABBS is true" << "\n";
+					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					if(collision.isColliding == true){
+						std::cout << "Collision on AABBS is true" << "\n";
 
 					}
 				}
@@ -286,40 +286,55 @@ namespace Example
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision left" << "\n";
-					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					std::cout << "SAT on AABBS is " << collision << "\n";
+					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					if(collision.isColliding == true){
+						std::cout << "Collision on AABBS is true" << "\n";
+
+					}
 				}
 				// top side this time
 				else if(gnList[i - 1].maxBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].maxBounds.y() < gnList[i].maxBounds.y()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision top" << "\n";
-					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					std::cout << "SAT on AABBS is " << collision << "\n";
+					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					if(collision.isColliding == true){
+						std::cout << "Collision on AABBS is true" << "\n";
+
+					}
 				}
 				// bottom side
 				else if(gnList[i - 1].minBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].minBounds.y() < gnList[i].maxBounds.y()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision bottom" << "\n";
-					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					std::cout << "SAT on AABBS is " << collision << "\n";
+					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					if(collision.isColliding == true){
+						std::cout << "Collision on AABBS is true" << "\n";
+
+					}
 				}
 				// it's front side time
 				else if(gnList[i - 1].maxBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].maxBounds.z() < gnList[i].maxBounds.z()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision front" << "\n";
-					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					std::cout << "SAT on AABBS is " << collision << "\n";
+					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					if(collision.isColliding == true){
+						std::cout << "Collision on AABBS is true" << "\n";
+
+					}
 				}
 				// now it's back side collisions
 				else if(gnList[i - 1].minBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].minBounds.z() < gnList[i].maxBounds.z()){
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
 					std::cout << "Collision back" << "\n";
-					bool collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					std::cout << "SAT on AABBS is " << collision << "\n";
+					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
+					if(collision.isColliding == true){
+						std::cout << "Collision on AABBS is true" << "\n";
+
+					}
 				}
 
 			}
@@ -791,8 +806,9 @@ bool ExampleApp::overlapingOnAxis(const GraphicsNode &gn, const GraphicsNode &gn
     return ((second.min <= first.max) && (first.min <= second.max));
 }
 
-bool ExampleApp::SATOnAABBs(const GraphicsNode &gn, const GraphicsNode &gn2)
+CollisionManifold ExampleApp::SATOnAABBs(GraphicsNode &gn, GraphicsNode &gn2)
 {
+	CollisionManifold collisionResult;
 	Vector4D testAxis[15] = {
 		Vector4D(1.0f, 0.0f, 0.0f),
 		Vector4D(0.0f, 1.0f, 0.0f),
@@ -810,17 +826,201 @@ bool ExampleApp::SATOnAABBs(const GraphicsNode &gn, const GraphicsNode &gn2)
 	bool negativePenetration;
 	float smallestPenDepth = __FLT_MAX__;
 	Vector4D smallestPenAxis;
+	Vector4D collisionNormal;
+	Vector4D max = gn.maxBounds;
+	Vector4D min = gn.minBounds;
+
+
 	for (int i = 0; i < 15; ++i){
 		if(!overlapingOnAxis(gn, gn2, testAxis[i], resultantPenDepth, negativePenetration)){
-			return false;
+			return collisionResult;
 		}
 
 		if(resultantPenDepth < smallestPenDepth) {
 			smallestPenDepth = resultantPenDepth;
 			smallestPenAxis = testAxis[i] * (negativePenetration ? -1.0f : 1.0f);
+			collisionNormal = testAxis[i];
+			collisionResult.depth = smallestPenDepth;
 		}
 	}
-    return true;
+	if(collisionNormal == Vector4D(0.0f, 0.0f, 0.0f)){
+		return collisionResult;
+	}
+	Vector4D collisionAxis = collisionNormal.norm();
+
+	std::vector<Vector4D> collisions1 = checkEdgesToAABB(getEdges(gn2), gn);
+	std::vector<Vector4D> collisions2 = checkEdgesToAABB(getEdges(gn), gn2);
+	collisionResult.contactPoints.reserve(collisions1.size() + collisions2.size());
+	for(int i = 0; i < collisions2.size(); i++){
+		collisionResult.contactPoints.push_back(collisions2[i]);
+	}
+	for(int i = 0; i < collisions1.size(); i++){
+		collisionResult.contactPoints.push_back(collisions1[i]);
+	}
+
+	Interval interval = getInterval(gn, collisionAxis);
+	float distance = (interval.max - interval.min) * 0.5f - smallestPenDepth * 0.5f;
+	
+	Vector4D planePoint = gn.AABBCenter + collisionAxis * distance;
+	
+
+	for (int i = collisionResult.contactPoints.size() - 1; i >= 0; --i){
+		Vector4D contactPoint = collisionResult.contactPoints[i];
+		collisionResult.contactPoints[i] = contactPoint + (collisionAxis * 
+			Vector4D::dot(collisionAxis, planePoint - contactPoint));
+		for (int j = collisionResult.contactPoints.size() - 1; j > i; --j){
+			Vector4D contactSquared = collisionResult.contactPoints[j] - collisionResult.contactPoints[i];
+			if(Vector4D::dot(contactSquared, contactSquared) < 0.001f) {
+				collisionResult.contactPoints.erase(collisionResult.contactPoints.begin() + j);
+				break;
+			} 
+		}
+
+	}
+
+	collisionResult.isColliding = true;
+	collisionResult.collisionNormal = collisionAxis;
+
+
+    return collisionResult;
+}
+
+std::vector<Line> ExampleApp::getEdges(const GraphicsNode &gn)
+{
+	std::vector<Line> edges;
+	edges.reserve(12);
+	Vector4D max = gn.maxBounds;
+	Vector4D min = gn.minBounds;
+	Vector4D verts[] = {
+		Vector4D(min.x(), max.y(), min.z()), // top front left
+		Vector4D(min.x(), max.y(), max.z()), // top back left
+
+		Vector4D(min.x(), min.y(), min.z()), // bottom front left
+		Vector4D(min.x(), min.y(), max.z()), // bottom back left
+
+		Vector4D(max.x(), max.y(), min.z()), // top front right
+		Vector4D(max.x(), max.y(), max.z()), // top back right
+
+		Vector4D(max.x(), min.y(), min.z()), // bottom front right
+		Vector4D(max.x(), min.y(), max.z())  // bottom back right
+	};
+
+	int edgeIndices[][2] = {
+		{1, 0}, {0, 2}, {1, 3}, {3, 2}, // left side face
+		{5, 4}, {4, 6}, {5, 7}, {7, 6}, // right side face
+		{0, 4}, {2, 6}, 				// front side face (the others are shared with other faces)
+		{1, 5}, {3, 7}					// back side face
+	};
+
+	for (int i = 0; i < 12; ++i){
+		edges.push_back(Line(verts[edgeIndices[i][0]], 
+			verts[edgeIndices[i][1]]));
+
+	}
+
+    return edges;
+}
+
+std::vector<Vector4D> ExampleApp::checkEdgesToAABB(const std::vector<Line> &edges, const GraphicsNode& gn)
+{
+	std::vector<Vector4D> results;
+	results.reserve(edges.size() * 3);
+	Vector4D intersection;
+	Vector4D max = gn.maxBounds;
+	Vector4D min = gn.minBounds;
+
+	std::vector<Plane> planes = getPlanes(gn);
+
+	for (int i = 0; i < planes.size(); ++i) {
+		for (int j = 0; j < edges.size(); ++j){
+			if(checkEdgesToPlane(planes[i], edges[j], intersection)){
+				if(intersection.x() > min.x() && intersection.x() < max.x() &&
+					intersection.y() > min.y() && intersection.y() < max.y() &&
+					intersection.z() > min.z() && intersection.z() < max.z()){
+						results.push_back(intersection);
+					}
+			}
+		}
+	}
+
+    return results;
+}
+
+std::vector<Plane> ExampleApp::getPlanes(const GraphicsNode& gn)
+{
+	std::vector<Plane> planes;
+	planes.resize(6);
+	Vector4D max = gn.maxBounds;
+	Vector4D min = gn.minBounds;
+	Vector4D verts[] = {
+		Vector4D(min.x(), max.y(), min.z()), // top front left
+		Vector4D(min.x(), max.y(), max.z()), // top back left
+
+		Vector4D(min.x(), min.y(), min.z()), // bottom front left
+		Vector4D(min.x(), min.y(), max.z()), // bottom back left
+
+		Vector4D(max.x(), max.y(), min.z()), // top front right
+		Vector4D(max.x(), max.y(), max.z()), // top back right
+
+		Vector4D(max.x(), min.y(), min.z()), // bottom front right
+		Vector4D(max.x(), min.y(), max.z())  // bottom back right
+	};
+	Vector4D axis[] = {
+		Vector4D(1.0f, 0.0f, 0.0f),
+		Vector4D(0.0f, 1.0f, 0.0f),
+		Vector4D(0.0f, 0.0f, 1.0f)
+
+	};
+
+	planes[0] = Plane(verts[5], verts[4], verts[7]); // right plane
+	planes[0].setNormal(axis[0]);
+	planes[0].setDistance(Vector4D::dot(axis[0], (gn.AABBCenter + axis[0]) * gn.AABBSize.get(0)));
+
+	planes[1] = Plane(verts[0], verts[1], verts[3]); // left plane
+	planes[1].setNormal(axis[0] * -1.0f);
+	planes[1].setDistance(Vector4D::dot(axis[0], (gn.AABBCenter - axis[0]) * gn.AABBSize.get(0)));
+
+	planes[2] = Plane(verts[0], verts[4], verts[2]); // front plane
+	planes[2].setNormal(axis[2] * -1.0f);
+	planes[2].setDistance(Vector4D::dot(axis[2], (gn.AABBCenter - axis[2]) * gn.AABBSize.get(2)));
+
+	planes[3] = Plane(verts[1], verts[3], verts[5]); // back plane
+	planes[3].setNormal(axis[2]);
+	planes[2].setDistance(Vector4D::dot(axis[2], (gn.AABBCenter + axis[2]) * gn.AABBSize.get(2)));
+
+	planes[4] = Plane(verts[0], verts[1], verts[5]); // top plane
+	planes[4].setNormal(axis[1]);
+	planes[4].setDistance(Vector4D::dot(axis[1], (gn.AABBCenter + axis[1]) * gn.AABBSize.get(1)));
+
+	planes[5] = Plane(verts[3], verts[2], verts[7]); // bottom plane
+	planes[5].setNormal(axis[1] * -1.0f);
+	planes[5].setDistance(Vector4D::dot(axis[1], (gn.AABBCenter - axis[1]) * gn.AABBSize.get(1)));
+
+
+
+    return planes;
+}
+
+bool ExampleApp::checkEdgesToPlane(const Plane &plane, const Line &edge, Vector4D &resultPoint)
+{
+	Vector4D edgeVector = edge.end - edge.start;
+	
+	float normalEdge = Vector4D::dot(plane.getNormal(), edge.start);
+	float normalEdgeVector = Vector4D::dot(plane.getNormal(), edgeVector);
+
+	if(normalEdgeVector == 0){
+		return false;
+	}
+
+	float t = (plane.getDistance() - normalEdge) / normalEdgeVector;
+	if(t >= 0.0f && t <= 1.0f) {
+		if(resultPoint.x() != 0 && resultPoint.z() != 0 && resultPoint.z() != 0){
+			resultPoint = edge.start + edgeVector * t;
+		}
+		return true;
+	}
+
+    return false;
 }
 
 } // namespace Example

@@ -22,6 +22,23 @@ typedef struct Interval {
 	float min;
 } Interval;
 
+typedef struct Line {
+	Vector4D start;
+	Vector4D end;
+	Line() {
+
+	}
+	Line(const Vector4D& newStart, const Vector4D& newEnd) : start(newStart), end(newEnd) 
+	{} 
+} Line;
+
+typedef struct CollisionManifold {
+	std::vector<Vector4D> contactPoints;
+	float depth;
+	bool isColliding;
+	Vector4D collisionNormal;
+}; 
+
 namespace Example
 {
 class ExampleApp : public Core::App
@@ -48,7 +65,12 @@ public:
 
 	Interval getInterval(const GraphicsNode& gn, const Vector4D axis);
 	bool overlapingOnAxis(const GraphicsNode& gn, const GraphicsNode& gn2, const Vector4D& axis, float& depth, bool& isNegative);
-	bool SATOnAABBs(const GraphicsNode& gn, const GraphicsNode& gn2);
+	CollisionManifold SATOnAABBs(GraphicsNode& gn, GraphicsNode& gn2);
+	std::vector<Line> getEdges(const GraphicsNode& gn);
+	std::vector<Vector4D> checkEdgesToAABB(const std::vector<Line>& edges, const GraphicsNode& gn);
+	std::vector<Plane> getPlanes(const GraphicsNode& gn);
+	bool checkEdgesToPlane(const Plane& plane, const Line& edge, Vector4D& resultPoint);
+
 
 	GLuint program;
 	GLuint vertexShader;

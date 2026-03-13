@@ -13,6 +13,10 @@ GraphicsNode::GraphicsNode(MeshResource newMesh, TextureResource newTexture, Sha
 	transform = newTransform;
 	maxBounds = mesh.get()->maxCoords;
 	minBounds = mesh.get()->minCoords;
+	AABBSize.x() = abs(minBounds.x() - maxBounds.x());
+	AABBSize.y() = abs(minBounds.y() - maxBounds.y());
+	AABBSize.z() = abs(minBounds.z() - maxBounds.z());
+	AABBCenter = maxBounds + AABBSize * 0.5;
 	initAABBRendering();
 }
 
@@ -25,6 +29,10 @@ GraphicsNode::GraphicsNode(const GraphicsNode& gn)
 	shader = gn.shader;
 	maxBounds = gn.maxBounds;
 	minBounds = gn.minBounds;
+	AABBSize.x() = abs(minBounds.x() - maxBounds.x());
+	AABBSize.y() = abs(minBounds.y() - maxBounds.y());
+	AABBSize.z() = abs(minBounds.z() - maxBounds.z());
+	AABBCenter = maxBounds - (AABBSize * 0.5);
 	initAABBRendering();
 
 }
@@ -54,6 +62,10 @@ void GraphicsNode::setMesh(std::shared_ptr<MeshResource>& newMesh)
 	mesh = newMesh;
 	maxBounds = mesh.get()->maxCoords;
 	minBounds = mesh.get()->minCoords;
+	AABBSize.x() = abs(minBounds.x() - maxBounds.x());
+	AABBSize.y() = abs(minBounds.y() - maxBounds.y());
+	AABBSize.z() = abs(minBounds.z() - maxBounds.z());
+	AABBCenter = maxBounds - (AABBSize * 0.5);
 	initAABBRendering();
 }
 
@@ -266,6 +278,8 @@ void GraphicsNode::updateBounds()
 	minMatrix = minMatrix * transform;
 
 	minBounds = {minMatrix[0][0], minMatrix[0][1], minMatrix[0][2], minMatrix[0][3]};
+
+	AABBCenter = maxBounds - (AABBSize * 0.5);
 
 }
 

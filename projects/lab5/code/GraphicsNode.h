@@ -48,6 +48,8 @@ public:
 
 	Vector4D maxBounds;
 	Vector4D minBounds;
+	Vector4D AABBCenter;
+	Vector4D AABBSize;
 
 private:
 	std::shared_ptr<MeshResource> mesh;

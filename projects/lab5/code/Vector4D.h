@@ -90,7 +90,7 @@ public:
 	///
 	///Overloads the + operator for vector addition
 	///
-	Vector4D operator+(const Vector4D& v) {
+	Vector4D operator+(const Vector4D& v) const {
 		Vector4D newvec;
 		newvec.vecarray[0] = vecarray[0] + v.vecarray[0];
 		newvec.vecarray[1] = vecarray[1] + v.vecarray[1];
@@ -101,7 +101,7 @@ public:
 	///
 	///Overloads the - operator for vector subtraction
 	///
-	Vector4D operator-(const Vector4D& v) {
+	Vector4D operator-(const Vector4D& v) const {
 		Vector4D newvec;
 		newvec.vecarray[0] = vecarray[0] - v.vecarray[0];
 		newvec.vecarray[1] = vecarray[1] - v.vecarray[1];

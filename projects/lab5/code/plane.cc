@@ -7,12 +7,12 @@ Plane::Plane() {
 Plane::~Plane() {
 
 }
-Plane::Plane(Plane &newPlane) {
+Plane::Plane(const Plane &newPlane) {
     this->normal = newPlane.getNormal();
     this->pointVectors = newPlane.getPoints();
 }
 
-Plane::Plane(std::vector<Vector4D> pointVector) {
+Plane::Plane(const std::vector<Vector4D>& pointVector) {
     this->pointVectors = pointVector;
     Vector4D ab = this->pointVectors[1] - this->pointVectors[0];
     Vector4D ac = this->pointVectors[2] - this->pointVectors[0];
@@ -82,15 +82,26 @@ Plane::Plane(std::vector<Vector4D> pointVector) {
     glEnableVertexAttribArray(0);
 }
 
-Vector4D& Plane::getPoint(int index) {
+Plane::Plane(const Vector4D &p1, const Vector4D &p2, const Vector4D &p3)
+{
+    pointVectors.push_back(p1);
+    pointVectors.push_back(p2);
+    pointVectors.push_back(p3);
+    Vector4D ab = this->pointVectors[1] - this->pointVectors[0];
+    Vector4D ac = this->pointVectors[2] - this->pointVectors[0];
+    this->normal = Vector4D::cross(ab, ac);
+    this->distance = Vector4D::dot(this->normal, pointVectors[0]);
+}
+
+Vector4D Plane::getPoint(int index) const{
     return this->pointVectors[index];
 }
 
-Vector4D& Plane::getNormal() {
+Vector4D Plane::getNormal() const{
     return normal;
 }
 
-float &Plane::getDistance()
+float Plane::getDistance() const
 {
     return distance;
 }
@@ -105,6 +116,16 @@ Vector4D &Plane::getMinBounds()
     return minBounds;
 }
 
+void Plane::setNormal(const Vector4D &normal)
+{
+    this->normal = normal;
+}
+
+void Plane::setDistance(const float &distance)
+{
+    this->distance = distance;
+}
+
 void Plane::draw()
 {
     glBindVertexArray(VAO);
@@ -112,6 +133,6 @@ void Plane::draw()
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
-std::vector<Vector4D>& Plane::getPoints() {
+std::vector<Vector4D> Plane::getPoints() const{
     return pointVectors;
 }
