@@ -63,14 +63,14 @@ public:
 
 	void renderCube();
 
-	Interval getInterval(GraphicsNode& gn, const Vector4D axis);
-	bool overlapingOnAxis(GraphicsNode& gn, GraphicsNode& gn2, Vector4D& axis, float& depth, bool& isNegative);
-	CollisionManifold SATOnAABBs(GraphicsNode& gn, GraphicsNode& gn2);
-	std::vector<Line> getEdges(GraphicsNode& gn);
-	std::vector<Vector4D> checkEdgesToAABB(const std::vector<Line>& edges, GraphicsNode& gn);
-	std::vector<Plane> getPlanes(GraphicsNode& gn);
+	Interval getInterval(const GraphicsNode& gn, const Vector4D axis);
+	bool overlapingOnAxis(const GraphicsNode& gn, const GraphicsNode& gn2, Vector4D& axis, float& depth, bool& isNegative);
+	CollisionManifold SATOnAABBs(const GraphicsNode& gn, const GraphicsNode& gn2);
+	std::vector<Line> getEdges(const GraphicsNode& gn);
+	std::vector<Vector4D> checkEdgesToAABB(const std::vector<Line>& edges, const GraphicsNode& gn);
+	std::vector<Plane> getPlanes(const GraphicsNode& gn);
 	bool checkEdgesToPlane(const Plane& plane, const Line& edge, Vector4D& resultPoint);
-	bool pointInAABB(const Vector4D& point, GraphicsNode& gn);
+	bool pointInAABB(const Vector4D& point, const GraphicsNode& gn);
 
 
 	GLuint program;

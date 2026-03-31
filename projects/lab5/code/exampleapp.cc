@@ -302,20 +302,13 @@ namespace Example
 						gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
 
 					}
-
-
-
 					
 				}
 				else{
 					gnList[i - 1].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
 					gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
 				}
-				
-
 			}
-
-
 
 			window->SetKeyPressFunction([this, &light, &gnList](int32 asciikey, int32 argb, int32 status, int32 mod)
 			{
@@ -618,6 +611,8 @@ namespace Example
 
 				}
 			}
+
+			//debug cubes
 			Vector4D cubeColor;
 			for(int i = 0; i < gnList.size(); i++){
 				for(int j = 0; j < 3; j++){
@@ -651,7 +646,7 @@ namespace Example
 
 			}
 
-			
+			//debug edges
 			rayShader.get()->use();
 			rayShader.get()->setMat4(std::string("view"), cam.getView());
 			rayShader.get()->setMat4(std::string("projection"), projection);
@@ -667,74 +662,6 @@ namespace Example
 					glVertex3f(p2.x(), p2.y(), p2.z());
 				}
 				glEnd();
-				// Vector4D max = gnList[i].getMesh()->maxCoords;
-				// Vector4D gnMax = gnList[i].maxBounds;
-
-				// Vector4D min = gnList[i].getMesh()->minCoords;
-				// float AABBVerts[] = {
-				// 	min.x(), max.y(), min.z(), // top front left
-				// 	min.x(), max.y(), max.z(), // top back left
-
-				// 	min.x(), min.y(), min.z(), // bottom front left
-				// 	min.x(), min.y(), max.z(), // bottom back left
-
-				// 	max.x(), max.y(), min.z(), // top front right
-				// 	max.x(), max.y(), max.z(), // top back right
-
-				// 	max.x(), min.y(), min.z(), // bottom front right
-				// 	max.x(), min.y(), max.z()  // bottom back right
-				// };
-
-				// unsigned int indices[] = {
-				// 	0, 1, 2, // left face triangles
-				// 	2, 3, 1,
-
-				// 	2, 6, 3, // bottom face triangles
-				// 	3, 7, 6, 
-
-				// 	2, 0, 4, // front face triangles
-				// 	2, 6, 4,
-
-				// 	3, 1, 5, // back face triangles
-				// 	3, 7, 5,
-
-				// 	1, 0, 4, // top face triangles
-				// 	1, 5, 4,
-
-				// 	7, 5, 4, // right face triangles
-				// 	7, 6, 4
-				// };
-				// unsigned int lolvao;
-				// unsigned int lolvbo;
-				// unsigned int lolebo;
-				// glGenVertexArrays(1, &lolvao);
-				// glGenBuffers(1, &lolvbo);
-				// glGenBuffers(1, &lolebo);
-
-				// glBindVertexArray(lolvao);
-
-				// glBindBuffer(GL_ARRAY_BUFFER, lolvbo);
-				// glBufferData(GL_ARRAY_BUFFER, sizeof(AABBVerts), AABBVerts, GL_STATIC_DRAW);
-
-				// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lolebo);
-				// glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-				// glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-				// glEnableVertexAttribArray(0);
-
-				// Matrix4D lolTransform = gnList[i].getTransform();
-
-				// rayShader.get()->use();
-				// rayShader.get()->setMat4(std::string("view"), cam.getView());
-				// rayShader.get()->setMat4(std::string("projection"), projection);
-				// rayShader.get()->setVec4(std::string("rayColor"), Vector4D(0.75f, 0.1f, 0.36f));
-				// rayShader.get()->setMat4(std::string("model"), lolTransform);
-
-				// glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
-				// glBindVertexArray(lolvao);
-				// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lolebo);
-				// glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-				// glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
 
 			}
 
@@ -907,7 +834,7 @@ void ExampleApp::renderCube()
 {
 }
 
-Interval ExampleApp::getInterval(GraphicsNode &gn, const Vector4D axis)
+Interval ExampleApp::getInterval(const GraphicsNode &gn, const Vector4D axis)
 {
 	Vector4D max = gn.maxBounds;
 	Vector4D min = gn.minBounds;
@@ -940,7 +867,7 @@ Interval ExampleApp::getInterval(GraphicsNode &gn, const Vector4D axis)
     return result;
 }
 
-bool ExampleApp::overlapingOnAxis(GraphicsNode &gn, GraphicsNode &gn2, Vector4D &axis, float& depth, bool& isNegative)
+bool ExampleApp::overlapingOnAxis(const GraphicsNode &gn, const GraphicsNode &gn2, Vector4D &axis, float& depth, bool& isNegative)
 {
 	Interval first = getInterval(gn, axis.norm());
 	Interval second = getInterval(gn2, axis.norm());
@@ -962,7 +889,7 @@ bool ExampleApp::overlapingOnAxis(GraphicsNode &gn, GraphicsNode &gn2, Vector4D 
 
 }
 
-CollisionManifold ExampleApp::SATOnAABBs(GraphicsNode &gn, GraphicsNode &gn2)
+CollisionManifold ExampleApp::SATOnAABBs(const GraphicsNode &gn, const GraphicsNode &gn2)
 {
 	CollisionManifold collisionResult;
 	Vector4D testAxis[13] = {
@@ -1035,23 +962,25 @@ CollisionManifold ExampleApp::SATOnAABBs(GraphicsNode &gn, GraphicsNode &gn2)
 
 		for (int i = collisionResult.contactPoints.size() - 1; i >= 0; --i){
 			Vector4D contactPoint = collisionResult.contactPoints[i];
-			bool isWithinGN1 = contactPoint.x() >= gn.minBounds.x() && contactPoint.x() <= gn.maxBounds.x() &&
-				contactPoint.y() >= gn.minBounds.y() && contactPoint.y() <= gn.maxBounds.y() &&
-				contactPoint.z() >= gn.minBounds.z() && contactPoint.z() <= gn.maxBounds.z();
 
-			bool isWithinGN2 = contactPoint.x() >= gn2.minBounds.x() && contactPoint.x() <= gn2.maxBounds.x() &&
-				contactPoint.y() >= gn2.minBounds.y() && contactPoint.y() <= gn2.maxBounds.y() &&
-				contactPoint.z() >= gn2.minBounds.z() && contactPoint.z() <= gn2.maxBounds.z();
+			//check if point is larger than the min x, y and z values and smaller than the max x, y and z values of the gn
+			bool isWithinGN1 = contactPoint.x() >= gn.minBounds.get(0) && contactPoint.get(0) <= gn.maxBounds.get(0) &&
+				contactPoint.get(1) >= gn.minBounds.get(1) && contactPoint.get(1) <= gn.maxBounds.get(1) &&
+				contactPoint.get(2) >= gn.minBounds.get(2) && contactPoint.get(2) <= gn.maxBounds.get(2);
+
+			bool isWithinGN2 = contactPoint.get(0) >= gn2.minBounds.get(0) && contactPoint.get(0) <= gn2.maxBounds.get(0) &&
+				contactPoint.get(1) >= gn2.minBounds.get(1) && contactPoint.get(1) <= gn2.maxBounds.get(1) &&
+				contactPoint.get(2) >= gn2.minBounds.get(2) && contactPoint.get(2) <= gn2.maxBounds.get(2);
 
 			if(isWithinGN1 && isWithinGN2){
 
-					std::cout << "Contact point " << i << " is good" << "\n";
+					//std::cout << "Contact point " << i << " is good" << "\n";
 					continue;
 				}
 				collisionResult.contactPoints.erase(collisionResult.contactPoints.begin() + i);
-				std::cout << "Contact point " << i << " is not good at all" << "\n";
+				//std::cout << "Contact point " << i << " is not good at all" << "\n";
 
-				std::cout << "isWithinGN1 " << isWithinGN1 << " isWithinGN2 " << isWithinGN2 << "\n";
+				//std::cout << "isWithinGN1 " << isWithinGN1 << " isWithinGN2 " << isWithinGN2 << "\n";
 				
 		}
 
@@ -1064,7 +993,7 @@ CollisionManifold ExampleApp::SATOnAABBs(GraphicsNode &gn, GraphicsNode &gn2)
     return collisionResult;
 }
 
-std::vector<Line> ExampleApp::getEdges(GraphicsNode &gn)
+std::vector<Line> ExampleApp::getEdges(const GraphicsNode &gn)
 {
 	std::vector<Line> edges;
 	edges.reserve(12);
@@ -1100,7 +1029,7 @@ std::vector<Line> ExampleApp::getEdges(GraphicsNode &gn)
     return edges;
 }
 
-std::vector<Vector4D> ExampleApp::checkEdgesToAABB(const std::vector<Line> &edges, GraphicsNode& gn)
+std::vector<Vector4D> ExampleApp::checkEdgesToAABB(const std::vector<Line> &edges, const GraphicsNode& gn)
 {
 	std::vector<Vector4D> results;
 	results.reserve(edges.size() * 3);
@@ -1120,7 +1049,7 @@ std::vector<Vector4D> ExampleApp::checkEdgesToAABB(const std::vector<Line> &edge
     return results;
 }
 
-std::vector<Plane> ExampleApp::getPlanes(GraphicsNode& gn)
+std::vector<Plane> ExampleApp::getPlanes(const GraphicsNode& gn)
 {
 	std::vector<Plane> planes;
 	planes.resize(6);
@@ -1132,7 +1061,7 @@ std::vector<Plane> ExampleApp::getPlanes(GraphicsNode& gn)
 
 	Vector4D newCenter = gn.AABBCenter;
 	Vector4D size = gn.AABBSize;
-	size = size * 0.5f;
+	size = size * 0.5f; // we need to use half extents here
 	planes[0] = Plane(axis[0], Vector4D::dot(axis[0], (newCenter + axis[0] * size[0])));
 	planes[1] = Plane(axis[0] * -1.0f, -Vector4D::dot(axis[0], (newCenter - axis[0]) * size[0]));
 	planes[2] = Plane(axis[1], Vector4D::dot(axis[1], (newCenter + axis[1] * size[1])));
@@ -1163,7 +1092,7 @@ bool ExampleApp::checkEdgesToPlane(const Plane &plane, const Line &edge, Vector4
     return false;
 }
 
-bool ExampleApp::pointInAABB(const Vector4D &point, GraphicsNode &gn)
+bool ExampleApp::pointInAABB(const Vector4D &point, const GraphicsNode &gn)
 {
 	Vector4D direction = point - gn.AABBCenter; //direction to point
 	Vector4D axis[] = {
@@ -1175,11 +1104,11 @@ bool ExampleApp::pointInAABB(const Vector4D &point, GraphicsNode &gn)
 	for(int i = 0; i < 3; ++i){
 		float distance = Vector4D::dot(direction, axis[i]);
 		
-		if(distance > gn.AABBSize[i]){
+		if(distance > gn.AABBSize.get(i)){
 			return false;
 		}
 
-		if(distance < -gn.AABBSize[i]){
+		if(distance < -gn.AABBSize.get(i)){
 			return false;
 		}
 
