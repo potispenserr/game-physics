@@ -14,7 +14,7 @@ class GraphicsNode
 {
 public:
 	GraphicsNode();
-	GraphicsNode(MeshResource newMesh, TextureResource newTexture, ShaderObject newShader, Matrix4D newTransform);
+	GraphicsNode(MeshResource newMesh, TextureResource newTexture, ShaderObject newShader, Matrix4D newTransform, ShaderObject newAABBShader);
 	GraphicsNode(const GraphicsNode& gn);
 
 
@@ -29,6 +29,8 @@ public:
 	void setTexture(std::shared_ptr<TextureResource>& newTexture);
 	void setNormalMap(std::shared_ptr<TextureResource>& newNormalMap);
 	void setShader(std::shared_ptr<ShaderObject>& newShader);
+	void setAABBShader(std::shared_ptr<ShaderObject>& newAABBShader);
+	void setAABBColor(Vector4D color);
 
 	void setTransform(Vector4D newTransform);
 	void setTransform(Matrix4D newTransform);
@@ -38,7 +40,8 @@ public:
 	void initTexture(std::string path);
 
 	void initAABBRendering();
-	bool AABBRenderState = true;
+	bool AABBRenderState = false;
+	bool WireframeRenderState = false;
 
 	void draw(Camera cam, Matrix4D projection, Vector4D lightPosition);
 
@@ -56,8 +59,11 @@ private:
 	std::shared_ptr<TextureResource> texture;
 	std::shared_ptr<TextureResource> normalMap;
 	std::shared_ptr<ShaderObject> shader;
+	std::shared_ptr<ShaderObject> AABBshader;
 	Matrix4D transform;
 	
+	Vector4D AABBColor = {1.0f, 1.0f, 1.0f};
+	std::vector<Vector4D> AABBVerts;
 	unsigned int AABBVAO;
 	unsigned int AABBVBO;
 	unsigned int AABBEBO;

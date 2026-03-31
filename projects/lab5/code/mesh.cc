@@ -417,6 +417,10 @@ void MeshResource::generateBounds(std::vector<Vector4D> verts)
 	}
 	this->maxCoords = {maxX, maxY, maxZ};
 	this->minCoords = {minX, minY, minZ};
+	this->size.x() = abs(minCoords.x() - maxCoords.x());
+	this->size.y() = abs(minCoords.y() - maxCoords.y());
+	this->size.z() = abs(minCoords.z() - maxCoords.z());
+	this->center = maxCoords - (size * 0.5);
 
 }
 

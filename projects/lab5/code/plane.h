@@ -6,6 +6,8 @@ class Plane {
         Plane();
         Plane(const std::vector<Vector4D>& pointVector);
         Plane(const Vector4D& p1, const Vector4D& p2, const Vector4D& p3);
+        Plane(const Vector4D& normal, const float& distance);
+        
 
         Plane(const Plane &plane);
 

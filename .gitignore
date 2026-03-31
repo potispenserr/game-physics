@@ -30,6 +30,6 @@
 *.out
 *.app
 
-out/
-build/
 bin/
+build/
+out/

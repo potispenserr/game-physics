@@ -166,6 +166,7 @@ namespace Example
 
 		gn.setMesh(objectMesh);
 		gn.setShader(lightShader);
+		gn.setAABBShader(rayShader);
 		gn.setTexture(texPtr);
 		//gn.setNormalMap(normalMapPtr);
 		gn.initTexture("./resources/container45.jpg");
@@ -173,17 +174,17 @@ namespace Example
 
 		gn2.setMesh(objectMesh);
 		gn2.setShader(lightShader);
+		gn2.setAABBShader(rayShader);
 		gn2.setTexture(texPtr);
 		gn2.setTransform(Matrix4D());
 
-		Matrix4D gnTransform = Matrix4D::scale(Vector4D(0.5, 0.5, 0.5));
-		gnTransform = gnTransform * Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f));
+		//Matrix4D gnTransform = Matrix4D::scale(Vector4D(0.5, 0.5, 0.5));
+		Matrix4D gnTransform = gnTransform * Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f));
 
-		//Gather the transforms into one matrix otherwise all hell breaks loose
-		gn.updateTransform(gnTransform);
+		gn.setTransform(gnTransform);
 
-		Matrix4D gn2Transform = Matrix4D::scale(Vector4D(0.5, 0.5, 0.5)) * Matrix4D::translation(Vector4D(2.9f, 0.0f, 0.0f));
-		gn2.updateTransform(gn2Transform);
+		Matrix4D gn2Transform = Matrix4D::translation(Vector4D(2.0f, 1.0f, 1.5f));
+		gn2.setTransform(gn2Transform);
 
 		std::vector<GraphicsNode> gnList;
 		gnList.push_back(gn);
@@ -221,7 +222,7 @@ namespace Example
 		std::vector<Ray> rays;
 		Ray testRay(testPlane.getNormal(), testPlane.getNormal() * -50);
 		testRay.rayColor = Vector4D(1.0f, 1.0f, 1.0f);
-		rays.push_back(testRay);
+		//rays.push_back(testRay);
 		//rays.push_back(Ray(Vector4D(0.0f, 0.0f, 0.0f), Vector4D(0.0f, 5.0f, 5.0f)));
 
 		unsigned int cubeVBO;
@@ -255,6 +256,10 @@ namespace Example
 		Vector4D hitVisualizerPosition;
 
 		std::vector<GraphicsNode> collisionList;
+
+		CollisionManifold collisionManifold;
+
+		bool AABBRenderState = true;
 		
 
 		//render loop
@@ -267,81 +272,52 @@ namespace Example
 			deltaTime = currentFrame - lastFrame;	
 			lastFrame = currentFrame;
 
-			this->renderUI(squareHit, hitResults, gn.AABBRenderState);
+			for(int i = 0; i < gnList.size(); i++){
+				gnList[i].AABBRenderState = AABBRenderState;
+			}
+
+			this->renderUI(squareHit, hitResults, AABBRenderState, collisionManifold);
 
 			for(int i = 1; i < gnList.size(); i++){
-				// check if collisions are happening on the AABBs right side
-				if(gnList[i - 1].maxBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].maxBounds.x() < gnList[i].maxBounds.x()){
+				// check if collisions are happening on the AABBs
+				if(gnList[i - 1].maxBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].maxBounds.x() < gnList[i].maxBounds.x() ||
+					gnList[i - 1].minBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].minBounds.x() < gnList[i].maxBounds.x() ||
+					gnList[i - 1].maxBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].maxBounds.y() < gnList[i].maxBounds.y() ||
+					gnList[i - 1].minBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].minBounds.y() < gnList[i].maxBounds.y() ||
+					gnList[i - 1].maxBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].maxBounds.z() < gnList[i].maxBounds.z() ||
+					gnList[i - 1].minBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].minBounds.z() < gnList[i].maxBounds.z())
+				{
 					collisionList.push_back(gnList[i - 1]);
 					collisionList.push_back(gnList[i]);
-					std::cout << "Collision right" << "\n";
-					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					if(collision.isColliding == true){
-						std::cout << "Collision on AABBS is true" << "\n";
+					//std::cout << "Collision maybe" << "\n";
+					collisionManifold = SATOnAABBs(gnList[i - 1], gnList[i]);
+					//std::cout << "Collision on AABBS is " << collisionManifold.isColliding << " frfr no cap" << "\n";
+					if(collisionManifold.isColliding == true){
+						gnList[i - 1].setAABBColor(Vector4D(1.0f, 0.0f, 0.0f));
+						gnList[i].setAABBColor(Vector4D(1.0f, 0.0f, 0.0f));
 
 					}
-				}
-				// check if collisions are not happening on the AABBs left side
-				else if(gnList[i - 1].minBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].minBounds.x() < gnList[i].maxBounds.x()){
-					collisionList.push_back(gnList[i - 1]);
-					collisionList.push_back(gnList[i]);
-					std::cout << "Collision left" << "\n";
-					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					if(collision.isColliding == true){
-						std::cout << "Collision on AABBS is true" << "\n";
+					else {
+						gnList[i - 1].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
+						gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
 
 					}
-				}
-				// top side this time
-				else if(gnList[i - 1].maxBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].maxBounds.y() < gnList[i].maxBounds.y()){
-					collisionList.push_back(gnList[i - 1]);
-					collisionList.push_back(gnList[i]);
-					std::cout << "Collision top" << "\n";
-					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					if(collision.isColliding == true){
-						std::cout << "Collision on AABBS is true" << "\n";
 
-					}
-				}
-				// bottom side
-				else if(gnList[i - 1].minBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].minBounds.y() < gnList[i].maxBounds.y()){
-					collisionList.push_back(gnList[i - 1]);
-					collisionList.push_back(gnList[i]);
-					std::cout << "Collision bottom" << "\n";
-					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					if(collision.isColliding == true){
-						std::cout << "Collision on AABBS is true" << "\n";
 
-					}
-				}
-				// it's front side time
-				else if(gnList[i - 1].maxBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].maxBounds.z() < gnList[i].maxBounds.z()){
-					collisionList.push_back(gnList[i - 1]);
-					collisionList.push_back(gnList[i]);
-					std::cout << "Collision front" << "\n";
-					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					if(collision.isColliding == true){
-						std::cout << "Collision on AABBS is true" << "\n";
 
-					}
+					
 				}
-				// now it's back side collisions
-				else if(gnList[i - 1].minBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].minBounds.z() < gnList[i].maxBounds.z()){
-					collisionList.push_back(gnList[i - 1]);
-					collisionList.push_back(gnList[i]);
-					std::cout << "Collision back" << "\n";
-					CollisionManifold collision = SATOnAABBs(gnList[i - 1], gnList[i]);
-					if(collision.isColliding == true){
-						std::cout << "Collision on AABBS is true" << "\n";
-
-					}
+				else{
+					gnList[i - 1].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
+					gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
 				}
+				
 
 			}
 
 
 
-			window->SetKeyPressFunction([this, &light](int32 asciikey, int32 argb, int32 status, int32 mod)
+			window->SetKeyPressFunction([this, &light, &gnList](int32 asciikey, int32 argb, int32 status, int32 mod)
 			{
 				//std::cout << "asciikey: " << asciikey << " argb: " << argb << " status: " << status << " mod: " << mod << "\n";
 
@@ -362,22 +338,22 @@ namespace Example
 						cam.camPos = cam.camPos + Vector4D::cross(cam.camFront, cam.camUp).norm() * camSpeed;
 						break;
 					case GLFW_KEY_J:
-						light.lightPos = light.lightPos - Vector4D(0.5f, 0.0f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(-0.5f, 0.0f, 0.0f)));
 						break;
 					case GLFW_KEY_K:
-						light.lightPos = light.lightPos + Vector4D(0.0f, 0.0f, 0.5f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, 0.0f, 0.5f)));
 						break;
 					case GLFW_KEY_L:
-						light.lightPos = light.lightPos + Vector4D(0.5f, 0.0f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.5f, 0.0f, 0.0f)));
 						break;
 					case GLFW_KEY_I:
-						light.lightPos = light.lightPos + Vector4D(0.0f, 0.0f, -0.5f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, 0.0f, -0.5f)));
 						break;
 					case GLFW_KEY_U:
-						light.lightPos = light.lightPos + Vector4D(0.0f, -0.5f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, -0.5f, 0.0f)));
 						break;
 					case GLFW_KEY_O:
-						light.lightPos = light.lightPos + Vector4D(0.0f, 0.5f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, 0.5f, 0.0f)));
 						break;
 
 					case GLFW_KEY_Q:
@@ -408,22 +384,22 @@ namespace Example
 						cam.camPos = cam.camPos + Vector4D::cross(cam.camFront, cam.camUp).norm() * camSpeed;
 						break;
 					case GLFW_KEY_J:
-						light.lightPos = light.lightPos - Vector4D(0.5f, 0.0f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(-0.5f, 0.0f, 0.0f)));
 						break;
 					case GLFW_KEY_K:
-						light.lightPos = light.lightPos + Vector4D(0.0f, 0.0f, 0.5f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, 0.0f, 0.5f)));
 						break;
 					case GLFW_KEY_L:
-						light.lightPos = light.lightPos + Vector4D(0.5f, 0.0f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.5f, 0.0f, 0.0f)));
 						break;
 					case GLFW_KEY_I:
-						light.lightPos = light.lightPos + Vector4D(0.0f, 0.0f, -0.5f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, 0.0f, -0.5f)));
 						break;
 					case GLFW_KEY_U:
-						light.lightPos = light.lightPos + Vector4D(0.0f, -0.5f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, -0.5f, 0.0f)));
 						break;
 					case GLFW_KEY_O:
-						light.lightPos = light.lightPos + Vector4D(0.0f, 0.5f, 0.0f);
+						gnList[1].updateTransform(Matrix4D::translation(Vector4D(0.0f, 0.5f, 0.0f)));
 						break;
 
 					case GLFW_KEY_Q:
@@ -475,7 +451,7 @@ namespace Example
 					}
 					Vector4D gnHitPoint;
 					bool gnHit = false;
-					gnHit = rayWorld.Intersect(gn, gnHitPoint);
+					gnHit = rayWorld.Intersect(gnList[0], gnHitPoint);
 					if(gnHit == true){
 						// std::cout << "gn hit" << "\n";
 						// std::cout << gnHitPoint.x() << " " << gnHitPoint.y() << " " << gnHitPoint.z() << "\n";
@@ -565,9 +541,13 @@ namespace Example
 				});
 			cam.setView();
 			light.updateLighting(cam, projection, lightCube);
-			gn.draw(cam, projection, light.lightPos);
+			for(GraphicsNode gNode : gnList){
+				gNode.draw(cam, projection, light.lightPos);
+				
+			}
+			//gn.draw(cam, projection, light.lightPos);
 			lightCube.draw(cam, projection, light.lightPos);
-			gn2.draw(cam, projection, light.lightPos);
+			//gn2.draw(cam, projection, light.lightPos);
 			
 
 
@@ -588,7 +568,6 @@ namespace Example
 			rayShader.get()->setMat4(std::string("model"), rayTransform);
 			rayShader.get()->setMat4(std::string("view"), cam.getView());
 			rayShader.get()->setMat4(std::string("projection"), projection);
-			rayShader.get()->setVec3(std::string("viewPosition"), cam.camPos);
 			for(Ray ray : rays){
 				rayShader.get()->setVec4(std::string("rayColor"), ray.rayColor);
 				ray.draw();
@@ -607,10 +586,164 @@ namespace Example
         	glDrawArrays(GL_TRIANGLES, 0, 36);
 			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
 
+			if(collisionManifold.isColliding == true){
+				Vector4D cubeColor = {1.0f, 1.0f, 1.0f};
+				for(int i = 0; i < collisionManifold.contactPoints.size(); i++){
+					cubeTransform.reset();
+					cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
+					newTrans = cubeTransform.translation(collisionManifold.contactPoints[i]);
+					cubeTransform = cubeTransform * newTrans;
+					//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+					rayShader.get()->use();
+					rayShader.get()->setMat4(std::string("model"), cubeTransform);
+					rayShader.get()->setMat4(std::string("view"), cam.getView());
+					rayShader.get()->setMat4(std::string("projection"), projection);
+					rayShader.get()->setVec4(std::string("rayColor"), cubeColor);
+
+					glBindVertexArray(cubeVAO);
+					glDrawArrays(GL_TRIANGLES, 0, 36);
+					glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+					// glBegin(GL_POINTS);
+					// glVertex3f(collisionManifold.contactPoints[i].x(), collisionManifold.contactPoints[i].y(), collisionManifold.contactPoints[i].z());
+					// glEnd();
+
+					Ray normalRay = {Vector4D(0.0f, 0.0f, 0.0f), collisionManifold.collisionNormal * 5};
+					normalRay.rayColor = Vector4D(1.0f, 1.0f, 1.0f);
+					rayShader.get()->use();
+					rayShader.get()->setMat4(std::string("model"), rayTransform);
+					rayShader.get()->setMat4(std::string("view"), cam.getView());
+					rayShader.get()->setMat4(std::string("projection"), projection);
+					rayShader.get()->setVec4(std::string("rayColor"), normalRay.rayColor);
+					normalRay.draw();
+
+				}
+			}
+			Vector4D cubeColor;
+			for(int i = 0; i < gnList.size(); i++){
+				for(int j = 0; j < 3; j++){
+					cubeTransform.reset();
+					cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
+					if(j == 0){
+						newTrans = cubeTransform.translation(gnList[i].minBounds);
+						cubeColor = {0.0f, 1.0f, 0.0f};	
+					}
+					else if (j == 1){
+						newTrans = cubeTransform.translation(gnList[i].maxBounds);
+						cubeColor = {0.0f, 0.0f, 1.0f};
+					}
+					else if (j == 2){
+						newTrans = cubeTransform.translation(gnList[i].AABBCenter);
+						cubeColor = {1.0f, 0.0f, 0.0f};
+					}
+					cubeTransform = cubeTransform * newTrans;
+					glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+					rayShader.get()->use();
+					rayShader.get()->setMat4(std::string("model"), cubeTransform);
+					rayShader.get()->setMat4(std::string("view"), cam.getView());
+					rayShader.get()->setMat4(std::string("projection"), projection);
+					rayShader.get()->setVec4(std::string("rayColor"), cubeColor);
+	
+					glBindVertexArray(cubeVAO);
+					glDrawArrays(GL_TRIANGLES, 0, 36);
+					glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+	
+				}
+
+			}
+
+			
+			rayShader.get()->use();
+			rayShader.get()->setMat4(std::string("view"), cam.getView());
+			rayShader.get()->setMat4(std::string("projection"), projection);
+			rayShader.get()->setVec4(std::string("rayColor"), Vector4D(0.75f, 0.1f, 0.36f));
+			for(int i = 0; i < gnList.size(); i++){
+				rayShader.get()->setMat4(std::string("model"), Matrix4D());
+				glBegin(GL_LINES);
+				std::vector<Line> edges = getEdges(gnList[i]);
+				for(int j = 0; j < edges.size(); j++){
+					Vector4D p1 = edges[j].start;
+					Vector4D p2 = edges[j].end;
+					glVertex3f(p1.x(), p1.y(), p1.z());
+					glVertex3f(p2.x(), p2.y(), p2.z());
+				}
+				glEnd();
+				// Vector4D max = gnList[i].getMesh()->maxCoords;
+				// Vector4D gnMax = gnList[i].maxBounds;
+
+				// Vector4D min = gnList[i].getMesh()->minCoords;
+				// float AABBVerts[] = {
+				// 	min.x(), max.y(), min.z(), // top front left
+				// 	min.x(), max.y(), max.z(), // top back left
+
+				// 	min.x(), min.y(), min.z(), // bottom front left
+				// 	min.x(), min.y(), max.z(), // bottom back left
+
+				// 	max.x(), max.y(), min.z(), // top front right
+				// 	max.x(), max.y(), max.z(), // top back right
+
+				// 	max.x(), min.y(), min.z(), // bottom front right
+				// 	max.x(), min.y(), max.z()  // bottom back right
+				// };
+
+				// unsigned int indices[] = {
+				// 	0, 1, 2, // left face triangles
+				// 	2, 3, 1,
+
+				// 	2, 6, 3, // bottom face triangles
+				// 	3, 7, 6, 
+
+				// 	2, 0, 4, // front face triangles
+				// 	2, 6, 4,
+
+				// 	3, 1, 5, // back face triangles
+				// 	3, 7, 5,
+
+				// 	1, 0, 4, // top face triangles
+				// 	1, 5, 4,
+
+				// 	7, 5, 4, // right face triangles
+				// 	7, 6, 4
+				// };
+				// unsigned int lolvao;
+				// unsigned int lolvbo;
+				// unsigned int lolebo;
+				// glGenVertexArrays(1, &lolvao);
+				// glGenBuffers(1, &lolvbo);
+				// glGenBuffers(1, &lolebo);
+
+				// glBindVertexArray(lolvao);
+
+				// glBindBuffer(GL_ARRAY_BUFFER, lolvbo);
+				// glBufferData(GL_ARRAY_BUFFER, sizeof(AABBVerts), AABBVerts, GL_STATIC_DRAW);
+
+				// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lolebo);
+				// glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+				// glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+				// glEnableVertexAttribArray(0);
+
+				// Matrix4D lolTransform = gnList[i].getTransform();
+
+				// rayShader.get()->use();
+				// rayShader.get()->setMat4(std::string("view"), cam.getView());
+				// rayShader.get()->setMat4(std::string("projection"), projection);
+				// rayShader.get()->setVec4(std::string("rayColor"), Vector4D(0.75f, 0.1f, 0.36f));
+				// rayShader.get()->setMat4(std::string("model"), lolTransform);
+
+				// glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+				// glBindVertexArray(lolvao);
+				// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lolebo);
+				// glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+				// glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+
+			}
+
 
 
 			ImGui::Render();
 			collisionList.clear();
+			collisionManifold.contactPoints.clear();
+			
 
 
 			///     _             _          __  __ 
@@ -631,7 +764,7 @@ namespace Example
 		glfwTerminate();
 	}
 
-    void ExampleApp::renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults, bool& AABBRenderState)
+    void ExampleApp::renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults, bool& AABBRenderState, const CollisionManifold& cm)
     {
         ImGui_ImplGlfwGL3_NewFrame();
 		bool show_demo_window = true;
@@ -663,6 +796,16 @@ namespace Example
 			else{
 				ImGui::Text("No GraphicsNode hit yet :(");
 				
+			}
+
+			if(cm.isColliding == true){
+				ImGui::Text("The AABB collision normal is");
+				std::string normalText = std::to_string(cm.collisionNormal.get(0)) + " " + std::to_string(cm.collisionNormal.get(1))
+				 + " " + std::to_string(cm.collisionNormal.get(2));
+				ImGui::Text(normalText.c_str());
+			}
+			else{
+				ImGui::Text("No AABB collision yet");
 			}
 
 			if (ImGui::Button("Render AABB")){
@@ -764,52 +907,65 @@ void ExampleApp::renderCube()
 {
 }
 
-Interval ExampleApp::getInterval(const GraphicsNode &gn, const Vector4D axis)
+Interval ExampleApp::getInterval(GraphicsNode &gn, const Vector4D axis)
 {
 	Vector4D max = gn.maxBounds;
 	Vector4D min = gn.minBounds;
 	//AABB vertices
-	Vector4D vertices[8] = {
-		Vector4D(min.x(), max.y(), max.z()),
-		Vector4D(min.x(), max.y(), min.z()),
-		Vector4D(min.x(), min.y(), max.z()),
-		Vector4D(min.x(), min.y(), min.z()),
+	Vector4D verts[] = {
+		Vector4D(min.x(), max.y(), min.z()), // top front left
+		Vector4D(min.x(), max.y(), max.z()), // top back left
 
-		Vector4D(max.x(), max.y(), max.z()),
-		Vector4D(max.x(), max.y(), min.z()),
-		Vector4D(max.x(), min.y(), max.z()),
-		Vector4D(max.x(), min.y(), min.z())		
+		Vector4D(min.x(), min.y(), min.z()), // bottom front left
+		Vector4D(min.x(), min.y(), max.z()), // bottom back left
+
+		Vector4D(max.x(), max.y(), min.z()), // top front right
+		Vector4D(max.x(), max.y(), max.z()), // top back right
+
+		Vector4D(max.x(), min.y(), min.z()), // bottom front right
+		Vector4D(max.x(), min.y(), max.z())  // bottom back right
 	};
+	
 	Interval result;
-	result.max = Vector4D::dot(axis, vertices[0]);
-	result.min = Vector4D::dot(axis, vertices[0]);
+	result.max = -__FLT_MAX__;
+	result.min = __FLT_MAX__;
 
-	for (int i = 0; i < 8; ++i){
-		float projection = Vector4D::dot(axis, vertices[i]);
-		result.min = (projection < result.min) ? projection : result.min;
-		result.max = (projection > result.max) ? projection : result.max;
+	for (int i = 0; i < 8; i++){
+		float projection = Vector4D::dot(axis, verts[i]);
+		result.min = std::min(projection, result.min);
+		result.max = std::max(projection, result.max);
 	}
 
 
     return result;
 }
 
-bool ExampleApp::overlapingOnAxis(const GraphicsNode &gn, const GraphicsNode &gn2, const Vector4D &axis, float& depth, bool& isNegative)
+bool ExampleApp::overlapingOnAxis(GraphicsNode &gn, GraphicsNode &gn2, Vector4D &axis, float& depth, bool& isNegative)
 {
-	Interval first = getInterval(gn, axis);
-	Interval second = getInterval(gn2, axis);
-	float negativePen = second.max - first.max;
-	float positivePen = first.max - second.max;
-	depth = std::min(negativePen, positivePen);
-	isNegative = negativePen > positivePen;
+	Interval first = getInterval(gn, axis.norm());
+	Interval second = getInterval(gn2, axis.norm());
 
-    return ((second.min <= first.max) && (first.min <= second.max));
+	if (second.max < first.min) {
+		return false;
+	}
+	if(second.min > first.max) {
+		return false;
+	}
+
+
+	float negativePen = second.max - first.min;
+	float positivePen = first.max - second.min;
+	
+	isNegative = negativePen < positivePen;
+	depth = std::min(negativePen, positivePen);
+	return true;
+
 }
 
 CollisionManifold ExampleApp::SATOnAABBs(GraphicsNode &gn, GraphicsNode &gn2)
 {
 	CollisionManifold collisionResult;
-	Vector4D testAxis[15] = {
+	Vector4D testAxis[13] = {
 		Vector4D(1.0f, 0.0f, 0.0f),
 		Vector4D(0.0f, 1.0f, 0.0f),
 		Vector4D(0.0f, 0.0f, 1.0f),
@@ -817,36 +973,45 @@ CollisionManifold ExampleApp::SATOnAABBs(GraphicsNode &gn, GraphicsNode &gn2)
 		Vector4D(0.0f, 1.0f, 0.0f),
 		Vector4D(0.0f, 0.0f, 1.0f),
 	};
-	for (int i = 0; i < 3; ++i){
-		testAxis[6 + i * 3 + 0] = Vector4D::cross(testAxis[i], testAxis[0]);
-		testAxis[6 + i * 3 + 1] = Vector4D::cross(testAxis[i], testAxis[1]);
-		testAxis[6 + i * 3 + 2] = Vector4D::cross(testAxis[i], testAxis[2]);
+	for (int i = 0; i < 3; i++){
+		testAxis[4 + i * 3 + 0] = Vector4D::cross(testAxis[i], testAxis[0]);
+		testAxis[4 + i * 3 + 1] = Vector4D::cross(testAxis[i], testAxis[1]);
+		testAxis[4 + i * 3 + 2] = Vector4D::cross(testAxis[i], testAxis[2]);
 	}
-	float resultantPenDepth;
-	bool negativePenetration;
 	float smallestPenDepth = __FLT_MAX__;
 	Vector4D smallestPenAxis;
 	Vector4D collisionNormal;
-	Vector4D max = gn.maxBounds;
-	Vector4D min = gn.minBounds;
-
-
-	for (int i = 0; i < 15; ++i){
+	
+	
+	for (int i = 0; i < 13; i++){
+		bool negativePenetration;
+		float resultantPenDepth;
+		if(Vector4D::dot(testAxis[i], testAxis[i]) < 0.001f) {
+			continue;
+		}
 		if(!overlapingOnAxis(gn, gn2, testAxis[i], resultantPenDepth, negativePenetration)){
+			std::cout << "no collision" << "\n";
+			return collisionResult;
+		}
+		if(resultantPenDepth <= 0.0f){
 			return collisionResult;
 		}
 
 		if(resultantPenDepth < smallestPenDepth) {
 			smallestPenDepth = resultantPenDepth;
 			smallestPenAxis = testAxis[i] * (negativePenetration ? -1.0f : 1.0f);
-			collisionNormal = testAxis[i];
+
+			collisionNormal = smallestPenAxis;
 			collisionResult.depth = smallestPenDepth;
 		}
 	}
 	if(collisionNormal == Vector4D(0.0f, 0.0f, 0.0f)){
 		return collisionResult;
 	}
+
+	//std::cout << "hit normal is X: " << collisionNormal.x() << " Y: " << collisionNormal.y() << " Z: " << collisionNormal.z() << "\n";
 	Vector4D collisionAxis = collisionNormal.norm();
+	collisionResult.collisionNormal = collisionAxis;
 
 	std::vector<Vector4D> collisions1 = checkEdgesToAABB(getEdges(gn2), gn);
 	std::vector<Vector4D> collisions2 = checkEdgesToAABB(getEdges(gn), gn2);
@@ -859,33 +1024,47 @@ CollisionManifold ExampleApp::SATOnAABBs(GraphicsNode &gn, GraphicsNode &gn2)
 	}
 
 	Interval interval = getInterval(gn, collisionAxis);
-	float distance = (interval.max - interval.min) * 0.5f - smallestPenDepth * 0.5f;
+	float distance = (interval.max - interval.min) * 0.5f - collisionResult.depth * 0.5f;
 	
 	Vector4D planePoint = gn.AABBCenter + collisionAxis * distance;
 	
-
 	for (int i = collisionResult.contactPoints.size() - 1; i >= 0; --i){
 		Vector4D contactPoint = collisionResult.contactPoints[i];
 		collisionResult.contactPoints[i] = contactPoint + (collisionAxis * 
-			Vector4D::dot(collisionAxis, planePoint - contactPoint));
-		for (int j = collisionResult.contactPoints.size() - 1; j > i; --j){
-			Vector4D contactSquared = collisionResult.contactPoints[j] - collisionResult.contactPoints[i];
-			if(Vector4D::dot(contactSquared, contactSquared) < 0.001f) {
-				collisionResult.contactPoints.erase(collisionResult.contactPoints.begin() + j);
-				break;
-			} 
+		Vector4D::dot(collisionAxis, planePoint - contactPoint));
+
+		for (int i = collisionResult.contactPoints.size() - 1; i >= 0; --i){
+			Vector4D contactPoint = collisionResult.contactPoints[i];
+			bool isWithinGN1 = contactPoint.x() >= gn.minBounds.x() && contactPoint.x() <= gn.maxBounds.x() &&
+				contactPoint.y() >= gn.minBounds.y() && contactPoint.y() <= gn.maxBounds.y() &&
+				contactPoint.z() >= gn.minBounds.z() && contactPoint.z() <= gn.maxBounds.z();
+
+			bool isWithinGN2 = contactPoint.x() >= gn2.minBounds.x() && contactPoint.x() <= gn2.maxBounds.x() &&
+				contactPoint.y() >= gn2.minBounds.y() && contactPoint.y() <= gn2.maxBounds.y() &&
+				contactPoint.z() >= gn2.minBounds.z() && contactPoint.z() <= gn2.maxBounds.z();
+
+			if(isWithinGN1 && isWithinGN2){
+
+					std::cout << "Contact point " << i << " is good" << "\n";
+					continue;
+				}
+				collisionResult.contactPoints.erase(collisionResult.contactPoints.begin() + i);
+				std::cout << "Contact point " << i << " is not good at all" << "\n";
+
+				std::cout << "isWithinGN1 " << isWithinGN1 << " isWithinGN2 " << isWithinGN2 << "\n";
+				
 		}
 
 	}
 
+
 	collisionResult.isColliding = true;
-	collisionResult.collisionNormal = collisionAxis;
 
 
     return collisionResult;
 }
 
-std::vector<Line> ExampleApp::getEdges(const GraphicsNode &gn)
+std::vector<Line> ExampleApp::getEdges(GraphicsNode &gn)
 {
 	std::vector<Line> edges;
 	edges.reserve(12);
@@ -906,7 +1085,7 @@ std::vector<Line> ExampleApp::getEdges(const GraphicsNode &gn)
 	};
 
 	int edgeIndices[][2] = {
-		{1, 0}, {0, 2}, {1, 3}, {3, 2}, // left side face
+		{0, 1}, {0, 2}, {1, 3}, {3, 2}, // left side face
 		{5, 4}, {4, 6}, {5, 7}, {7, 6}, // right side face
 		{0, 4}, {2, 6}, 				// front side face (the others are shared with other faces)
 		{1, 5}, {3, 7}					// back side face
@@ -921,82 +1100,45 @@ std::vector<Line> ExampleApp::getEdges(const GraphicsNode &gn)
     return edges;
 }
 
-std::vector<Vector4D> ExampleApp::checkEdgesToAABB(const std::vector<Line> &edges, const GraphicsNode& gn)
+std::vector<Vector4D> ExampleApp::checkEdgesToAABB(const std::vector<Line> &edges, GraphicsNode& gn)
 {
 	std::vector<Vector4D> results;
 	results.reserve(edges.size() * 3);
 	Vector4D intersection;
-	Vector4D max = gn.maxBounds;
-	Vector4D min = gn.minBounds;
 
 	std::vector<Plane> planes = getPlanes(gn);
 
 	for (int i = 0; i < planes.size(); ++i) {
 		for (int j = 0; j < edges.size(); ++j){
 			if(checkEdgesToPlane(planes[i], edges[j], intersection)){
-				if(intersection.x() > min.x() && intersection.x() < max.x() &&
-					intersection.y() > min.y() && intersection.y() < max.y() &&
-					intersection.z() > min.z() && intersection.z() < max.z()){
-						results.push_back(intersection);
-					}
+				if(pointInAABB(intersection, gn)){
+					results.push_back(intersection);
+				}
 			}
 		}
 	}
-
     return results;
 }
 
-std::vector<Plane> ExampleApp::getPlanes(const GraphicsNode& gn)
+std::vector<Plane> ExampleApp::getPlanes(GraphicsNode& gn)
 {
 	std::vector<Plane> planes;
 	planes.resize(6);
-	Vector4D max = gn.maxBounds;
-	Vector4D min = gn.minBounds;
-	Vector4D verts[] = {
-		Vector4D(min.x(), max.y(), min.z()), // top front left
-		Vector4D(min.x(), max.y(), max.z()), // top back left
-
-		Vector4D(min.x(), min.y(), min.z()), // bottom front left
-		Vector4D(min.x(), min.y(), max.z()), // bottom back left
-
-		Vector4D(max.x(), max.y(), min.z()), // top front right
-		Vector4D(max.x(), max.y(), max.z()), // top back right
-
-		Vector4D(max.x(), min.y(), min.z()), // bottom front right
-		Vector4D(max.x(), min.y(), max.z())  // bottom back right
-	};
 	Vector4D axis[] = {
 		Vector4D(1.0f, 0.0f, 0.0f),
 		Vector4D(0.0f, 1.0f, 0.0f),
 		Vector4D(0.0f, 0.0f, 1.0f)
-
 	};
 
-	planes[0] = Plane(verts[5], verts[4], verts[7]); // right plane
-	planes[0].setNormal(axis[0]);
-	planes[0].setDistance(Vector4D::dot(axis[0], (gn.AABBCenter + axis[0]) * gn.AABBSize.get(0)));
-
-	planes[1] = Plane(verts[0], verts[1], verts[3]); // left plane
-	planes[1].setNormal(axis[0] * -1.0f);
-	planes[1].setDistance(Vector4D::dot(axis[0], (gn.AABBCenter - axis[0]) * gn.AABBSize.get(0)));
-
-	planes[2] = Plane(verts[0], verts[4], verts[2]); // front plane
-	planes[2].setNormal(axis[2] * -1.0f);
-	planes[2].setDistance(Vector4D::dot(axis[2], (gn.AABBCenter - axis[2]) * gn.AABBSize.get(2)));
-
-	planes[3] = Plane(verts[1], verts[3], verts[5]); // back plane
-	planes[3].setNormal(axis[2]);
-	planes[2].setDistance(Vector4D::dot(axis[2], (gn.AABBCenter + axis[2]) * gn.AABBSize.get(2)));
-
-	planes[4] = Plane(verts[0], verts[1], verts[5]); // top plane
-	planes[4].setNormal(axis[1]);
-	planes[4].setDistance(Vector4D::dot(axis[1], (gn.AABBCenter + axis[1]) * gn.AABBSize.get(1)));
-
-	planes[5] = Plane(verts[3], verts[2], verts[7]); // bottom plane
-	planes[5].setNormal(axis[1] * -1.0f);
-	planes[5].setDistance(Vector4D::dot(axis[1], (gn.AABBCenter - axis[1]) * gn.AABBSize.get(1)));
-
-
+	Vector4D newCenter = gn.AABBCenter;
+	Vector4D size = gn.AABBSize;
+	size = size * 0.5f;
+	planes[0] = Plane(axis[0], Vector4D::dot(axis[0], (newCenter + axis[0] * size[0])));
+	planes[1] = Plane(axis[0] * -1.0f, -Vector4D::dot(axis[0], (newCenter - axis[0]) * size[0]));
+	planes[2] = Plane(axis[1], Vector4D::dot(axis[1], (newCenter + axis[1] * size[1])));
+	planes[3] = Plane(axis[1]  * -1.0f, -Vector4D::dot(axis[1], (newCenter - axis[1] * size[1])));
+	planes[4] = Plane(axis[2], Vector4D::dot(axis[2], (newCenter + axis[2] * size[2])));
+	planes[5] = Plane(axis[2]  * -1.0f, -Vector4D::dot(axis[2], (newCenter - axis[2] * size[2])));
 
     return planes;
 }
@@ -1006,21 +1148,44 @@ bool ExampleApp::checkEdgesToPlane(const Plane &plane, const Line &edge, Vector4
 	Vector4D edgeVector = edge.end - edge.start;
 	
 	float normalEdge = Vector4D::dot(plane.getNormal(), edge.start);
-	float normalEdgeVector = Vector4D::dot(plane.getNormal(), edgeVector);
+	float normalEdgeAngle = Vector4D::dot(plane.getNormal(), edgeVector);
 
-	if(normalEdgeVector == 0){
+	if(normalEdgeAngle == 0){
 		return false;
 	}
 
-	float t = (plane.getDistance() - normalEdge) / normalEdgeVector;
+	float t = (plane.getDistance() - normalEdge) / normalEdgeAngle;
 	if(t >= 0.0f && t <= 1.0f) {
-		if(resultPoint.x() != 0 && resultPoint.z() != 0 && resultPoint.z() != 0){
-			resultPoint = edge.start + edgeVector * t;
-		}
+		resultPoint = edge.start + edgeVector * t;
 		return true;
 	}
 
     return false;
+}
+
+bool ExampleApp::pointInAABB(const Vector4D &point, GraphicsNode &gn)
+{
+	Vector4D direction = point - gn.AABBCenter; //direction to point
+	Vector4D axis[] = {
+		Vector4D(1.0f, 0.0f, 0.0f),
+		Vector4D(0.0f, 1.0f, 0.0f),
+		Vector4D(0.0f, 0.0f, 1.0f)
+
+	};
+	for(int i = 0; i < 3; ++i){
+		float distance = Vector4D::dot(direction, axis[i]);
+		
+		if(distance > gn.AABBSize[i]){
+			return false;
+		}
+
+		if(distance < -gn.AABBSize[i]){
+			return false;
+		}
+
+	}
+
+    return true;
 }
 
 } // namespace Example

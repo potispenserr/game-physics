@@ -39,6 +39,10 @@ public:
 
 	Vector4D maxCoords;
 	Vector4D minCoords;
+	Vector4D size;
+	Vector4D center;
+	
+
 
 	unsigned int vertexarray = 0;
 	unsigned int vertexbuffer = 0;

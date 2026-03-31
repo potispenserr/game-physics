@@ -5,18 +5,19 @@ GraphicsNode::GraphicsNode()
 {
 }
 
-GraphicsNode::GraphicsNode(MeshResource newMesh, TextureResource newTexture, ShaderObject newShader, Matrix4D newTransform)
+GraphicsNode::GraphicsNode(MeshResource newMesh, TextureResource newTexture, ShaderObject newShader, Matrix4D newTransform, ShaderObject newAABBShader)
 {
 	mesh = std::make_shared<MeshResource>(newMesh);
 	texture = std::make_shared<TextureResource>(newTexture);
 	shader = std::make_shared<ShaderObject>(newShader);
+	AABBshader = std::make_shared<ShaderObject>(newAABBShader);
 	transform = newTransform;
 	maxBounds = mesh.get()->maxCoords;
 	minBounds = mesh.get()->minCoords;
 	AABBSize.x() = abs(minBounds.x() - maxBounds.x());
 	AABBSize.y() = abs(minBounds.y() - maxBounds.y());
 	AABBSize.z() = abs(minBounds.z() - maxBounds.z());
-	AABBCenter = maxBounds + AABBSize * 0.5;
+	AABBCenter = maxBounds - (AABBSize * 0.5);
 	initAABBRendering();
 }
 
@@ -27,12 +28,16 @@ GraphicsNode::GraphicsNode(const GraphicsNode& gn)
 	shader = gn.shader;
 	transform = gn.transform;
 	shader = gn.shader;
+	AABBshader = gn.AABBshader;
 	maxBounds = gn.maxBounds;
 	minBounds = gn.minBounds;
 	AABBSize.x() = abs(minBounds.x() - maxBounds.x());
 	AABBSize.y() = abs(minBounds.y() - maxBounds.y());
 	AABBSize.z() = abs(minBounds.z() - maxBounds.z());
 	AABBCenter = maxBounds - (AABBSize * 0.5);
+	AABBRenderState = gn.AABBRenderState;
+	AABBColor = gn.AABBColor;
+	AABBVerts = gn.AABBVerts;
 	initAABBRendering();
 
 }
@@ -62,6 +67,19 @@ void GraphicsNode::setMesh(std::shared_ptr<MeshResource>& newMesh)
 	mesh = newMesh;
 	maxBounds = mesh.get()->maxCoords;
 	minBounds = mesh.get()->minCoords;
+	AABBVerts.resize(8);
+	AABBVerts[0] = Vector4D(minBounds.x(), maxBounds.y(), minBounds.z());
+	AABBVerts[1] = Vector4D(minBounds.x(), maxBounds.y(), maxBounds.z());
+
+	AABBVerts[2] = Vector4D(minBounds.x(), minBounds.y(), minBounds.z());
+	AABBVerts[3] = Vector4D(minBounds.x(), minBounds.y(), maxBounds.z());
+
+	AABBVerts[4] = Vector4D(maxBounds.x(), maxBounds.y(), minBounds.z());
+	AABBVerts[5] = Vector4D(maxBounds.x(), maxBounds.y(), maxBounds.z());
+
+	AABBVerts[6] = Vector4D(maxBounds.x(), minBounds.y(), minBounds.z());
+	AABBVerts[7] = Vector4D(maxBounds.x(), minBounds.y(), maxBounds.z());
+
 	AABBSize.x() = abs(minBounds.x() - maxBounds.x());
 	AABBSize.y() = abs(minBounds.y() - maxBounds.y());
 	AABBSize.z() = abs(minBounds.z() - maxBounds.z());
@@ -82,6 +100,16 @@ void GraphicsNode::setNormalMap(std::shared_ptr<TextureResource>& newNormalMap)
 void GraphicsNode::setShader(std::shared_ptr<ShaderObject>& newShader)
 {
 	shader = newShader;
+}
+
+void GraphicsNode::setAABBShader(std::shared_ptr<ShaderObject> &newAABBShader)
+{
+	AABBshader = newAABBShader;
+}
+
+void GraphicsNode::setAABBColor(Vector4D color)
+{
+	AABBColor = color;
 }
 
 void GraphicsNode::setTransform(Vector4D newTransform)
@@ -146,17 +174,17 @@ void GraphicsNode::initAABBRendering()
 	Vector4D& max = mesh.get()->maxCoords;
 	Vector4D& min = mesh.get()->minCoords;
 	float AABBVerts[] = {
-		min.x() * 1.1f, max.y() * 1.1f, min.z() * 1.1f, // top front left
-		min.x() * 1.1f, max.y() * 1.1f, max.z() * 1.1f, // top back left
+		min.x() * 1.01f, max.y() * 1.01f, min.z() * 1.01f, // top front left
+		min.x() * 1.01f, max.y() * 1.01f, max.z() * 1.01f, // top back left
 
-		min.x() * 1.1f, min.y() * 1.1f, min.z() * 1.1f, // bottom front left
-		min.x() * 1.1f, min.y() * 1.1f, max.z() * 1.1f, // bottom back left
+		min.x() * 1.01f, min.y() * 1.01f, min.z() * 1.01f, // bottom front left
+		min.x() * 1.01f, min.y() * 1.01f, max.z() * 1.01f, // bottom back left
 
-		max.x() * 1.1f, max.y() * 1.1f, min.z() * 1.1f, // top front right
-		max.x() * 1.1f, max.y() * 1.1f, max.z() * 1.1f, // top back right
+		max.x() * 1.01f, max.y() * 1.01f, min.z() * 1.01f, // top front right
+		max.x() * 1.01f, max.y() * 1.01f, max.z() * 1.01f, // top back right
 
-		max.x() * 1.1f, min.y() * 1.1f, min.z() * 1.1f, // bottom front right
-		max.x() * 1.1f, min.y() * 1.1f, max.z() * 1.1f  // bottom back right
+		max.x() * 1.01f, min.y() * 1.01f, min.z() * 1.01f, // bottom front right
+		max.x() * 1.01f, min.y() * 1.01f, max.z() * 1.01f  // bottom back right
 
 
 	};
@@ -241,12 +269,23 @@ void GraphicsNode::draw(Camera cam, Matrix4D projection, Vector4D lightPosition)
         }
 		return;
 	}
+	if(WireframeRenderState == true){
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+	}
 	glBindVertexArray(mesh.get()->vertexarray);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.get()->indexbuffer);
 	glDrawElements(GL_TRIANGLES, mesh.get()->indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, 0, mesh.get()->verticies.size());
+	if(WireframeRenderState == true){
+		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+	}
 
 	if(AABBRenderState == true){
+		AABBshader.get()->use();
+		AABBshader.get()->setMat4(std::string("model"), transform);
+		AABBshader.get()->setMat4(std::string("view"), cam.getView());
+		AABBshader.get()->setMat4(std::string("projection"), projection);
+		AABBshader.get()->setVec4(std::string("rayColor"), AABBColor);
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
 		glBindVertexArray(AABBVAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AABBEBO);
@@ -259,27 +298,86 @@ void GraphicsNode::draw(Camera cam, Matrix4D projection, Vector4D lightPosition)
 void GraphicsNode::updateBounds()
 {	
 
-	Matrix4D maxMatrix;
-	maxMatrix[0][0] = maxBounds[0];
-	maxMatrix[0][1] = maxBounds[1];
-	maxMatrix[0][2] = maxBounds[2];
-	maxMatrix[0][3] = maxBounds[3];
+	// Matrix4D maxMatrix;
+	// for(int i = 0; i < 16; i++){
+	// 	maxMatrix.set(i, 0);
+	// }
+	// maxMatrix[0][0] = 1.0f;
+	// maxMatrix[0][1] = 1.0f;
+	// maxMatrix[0][2] = 1.0f;
+	// maxMatrix[0][3] = 1.0f;
 
-	maxMatrix = maxMatrix * transform;
+	// maxMatrix = maxMatrix * transform;
 
-	maxBounds = {maxMatrix[0][0], maxMatrix[0][1], maxMatrix[0][2], maxMatrix[0][3]};
+	// maxBounds = {maxMatrix[0][0], maxMatrix[0][1], maxMatrix[0][2], maxMatrix[0][3]};
 
-	Matrix4D minMatrix;
-	minMatrix[0][0] = minBounds[0];
-	minMatrix[0][1] = minBounds[1];
-	minMatrix[0][2] = minBounds[2];
-	minMatrix[0][3] = minBounds[3];
+	// Matrix4D minMatrix;
+	// minMatrix[0][0] = 1.0f;
+	// minMatrix[0][1] = 1.0f;
+	// minMatrix[0][2] = 1.0f;
+	// minMatrix[0][3] = 1.0f;
+	
 
-	minMatrix = minMatrix * transform;
+	// minMatrix = minMatrix * transform;
 
-	minBounds = {minMatrix[0][0], minMatrix[0][1], minMatrix[0][2], minMatrix[0][3]};
+	// minBounds = {minMatrix[0][0], minMatrix[0][1], minMatrix[0][2], minMatrix[0][3]};
+	std::vector<Vector4D> newVerts;
+	newVerts.resize(8);
+	for(int i = 0; i < AABBVerts.size(); i++){
+		Matrix4D vecMatrix;
+		vecMatrix[0][0] = AABBVerts[i].x();
+		vecMatrix[0][1] = AABBVerts[i].y();
+		vecMatrix[0][2] = AABBVerts[i].z();
+		vecMatrix[0][3] = AABBVerts[i].w();
+
+		vecMatrix = vecMatrix * transform;
+
+		newVerts[i] = {vecMatrix[0][0], vecMatrix[0][1], vecMatrix[0][2], vecMatrix[0][3]};
+	}
+	float minX = newVerts[0].x();
+	float minY = newVerts[0].y();
+	float minZ = newVerts[0].z();
+
+	float maxX = newVerts[0].x(); 
+	float maxY = newVerts[0].y(); 
+	float maxZ = newVerts[0].z();
+
+	for (int i = 0; i < 8; i++){
+		// X checking
+		if(maxX < newVerts[i].x()){
+			maxX = newVerts[i].x();
+		}
+		if(minX > newVerts[i].x()){
+			minX = newVerts[i].x();
+		}
+
+		// Y checking
+		if(maxY < newVerts[i].y()){
+			maxY = newVerts[i].y();
+		}
+
+		if(minY > newVerts[i].y()){
+			minY = newVerts[i].y();
+		}
+
+		// Z checking
+		if(maxZ < newVerts[i].z()){
+			maxZ = newVerts[i].z();
+		}
+
+		if(minZ > newVerts[i].z()){
+			minZ = newVerts[i].z();
+		}
+
+	}
+	maxBounds = {maxX, maxY, maxZ};
+	minBounds = {minX, minY, minZ};
 
 	AABBCenter = maxBounds - (AABBSize * 0.5);
+
+	AABBSize.x() = abs(minBounds.x() - maxBounds.x());
+	AABBSize.y() = abs(minBounds.y() - maxBounds.y());
+	AABBSize.z() = abs(minBounds.z() - maxBounds.z());
 
 }
 

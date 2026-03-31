@@ -93,6 +93,12 @@ Plane::Plane(const Vector4D &p1, const Vector4D &p2, const Vector4D &p3)
     this->distance = Vector4D::dot(this->normal, pointVectors[0]);
 }
 
+Plane::Plane(const Vector4D &normal, const float& distance)
+{
+    this->normal = normal;
+    this->distance = distance;
+}
+
 Vector4D Plane::getPoint(int index) const{
     return this->pointVectors[index];
 }
