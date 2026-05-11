@@ -12,7 +12,7 @@ public:
     virtual void update(float deltaTime) {}
     virtual void render() {}
     virtual void applyForces() {}
-    virtual void solveConstraints() {}
+    virtual void solveConstraints(const std::vector<GraphicsNode>& constraints) {}
 
     bool hasVolume();
 
