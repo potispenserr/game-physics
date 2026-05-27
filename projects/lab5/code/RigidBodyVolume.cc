@@ -40,7 +40,7 @@ void RigidBodyVolume::synchCollisionVolumes()
         return;
     }
     
-    std::cout << "new position " << position.x() << " " << position.y() << " " << position.z() << "\n"; 
+    
     
     gn.setTransform(Matrix4D::translation(position));
     

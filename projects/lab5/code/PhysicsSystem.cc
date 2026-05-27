@@ -70,8 +70,8 @@ void PhysicsSystem::update(float deltaTime)
             !colliderPair2[i]->hasVolume() == true){
                 continue;      
         }
-        RigidBodyVolume* rbv1 = (RigidBodyVolume*)colliderPair1[1];
-        RigidBodyVolume* rbv2 = (RigidBodyVolume*)colliderPair2[1];
+        RigidBodyVolume* rbv1 = (RigidBodyVolume*)colliderPair1[i];
+        RigidBodyVolume* rbv2 = (RigidBodyVolume*)colliderPair2[i];
         float totalMass = rbv1->inverseMass() + rbv2->inverseMass();
 
         if(totalMass == 0.0f) {
@@ -83,6 +83,8 @@ void PhysicsSystem::update(float deltaTime)
 
         rbv1->position = rbv1->position - correction * rbv1->inverseMass();
         rbv2->position = rbv2->position + correction * rbv2->inverseMass();
+
+
 
         rbv1->synchCollisionVolumes();
         rbv2->synchCollisionVolumes();
