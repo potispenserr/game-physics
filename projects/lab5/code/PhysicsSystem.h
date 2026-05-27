@@ -20,7 +20,7 @@ public:
     ~PhysicsSystem();
 
     void update(float deltaTime);
-    void render();
+    void render(const Camera& cam, const Matrix4D& projection, const Vector4D& lightPos);
 
     void addConstraint(const GraphicsNode& constraint);
     void addRigidBody(RigidBody* newBody);

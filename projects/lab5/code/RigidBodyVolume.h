@@ -13,7 +13,7 @@ public:
 
     ~RigidBodyVolume();
 
-    void render();
+    void render(const Camera& cam, const Matrix4D& projection, const Vector4D& lightPos);
     void update(float deltaTime);
     void applyForces();
     void synchCollisionVolumes();

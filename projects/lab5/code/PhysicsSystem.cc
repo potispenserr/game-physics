@@ -1,5 +1,6 @@
 #include "PhysicsSystem.h"
 #include "RigidBodyVolume.h"
+#include <iostream>
 
 PhysicsSystem::PhysicsSystem()
 {
@@ -11,10 +12,15 @@ PhysicsSystem::PhysicsSystem()
     collisionResults.reserve(100);
 }
 
+PhysicsSystem::~PhysicsSystem()
+{
+}
+
 void PhysicsSystem::update(float deltaTime)
 {
     colliderPair1.clear();
     colliderPair2.clear();
+    collisionResults.clear();
     for (int i = 0; i < rBodies.size(); ++i){
         for (int j = i; j < rBodies.size(); ++j){
             if (i == j){
@@ -40,9 +46,9 @@ void PhysicsSystem::update(float deltaTime)
         rBodies[i]->applyForces();
     }
 
-    for (int i = 0; i < impulseIterations; i++){
-        for (int j = 0; j < collisionResults.size(); j++) {
-            for (int k = 0; k = collisionResults[i].contactPoints.size(); k++) {
+    for (int i = 0; i < impulseIterations; ++i){
+        for (int j = 0; j < collisionResults.size(); ++j) {
+            for (int k = 0; k < collisionResults[j].contactPoints.size(); ++k) {
                 if(colliderPair1[j]->hasVolume() == true && 
                     colliderPair2[j]->hasVolume() == true){
                         RigidBodyVolume* rbv1 = (RigidBodyVolume*)colliderPair1[j];
@@ -55,7 +61,7 @@ void PhysicsSystem::update(float deltaTime)
 
     }
 
-    for (int i = 0; i < collisionResults.size(); ++i){
+    for (int i = 0; i < rBodies.size(); ++i){
         rBodies[i]->update(deltaTime);
     }
 
@@ -72,25 +78,29 @@ void PhysicsSystem::update(float deltaTime)
             continue;
         }
         float depth = std::max(collisionResults[i].depth - penetrationSlack, 0.0f);
-        float scalar = depth / totalMass;
+        float scalar = totalMass == 0.0f ? 0.0f : depth / totalMass;
         Vector4D correction = collisionResults[i].collisionNormal * scalar * linearProjectionPercent;
 
         rbv1->position = rbv1->position - correction * rbv1->inverseMass();
-        rbv2->position = rbv2->position - correction * rbv2->inverseMass();
+        rbv2->position = rbv2->position + correction * rbv2->inverseMass();
 
         rbv1->synchCollisionVolumes();
         rbv2->synchCollisionVolumes();
 
     }
-
-    for (int i = 0; i < collisionResults.size(); ++i){ 
+    
+    for (int i = 0; i < rBodies.size(); ++i){ 
         rBodies[i]->solveConstraints(constraints);
     }
 
 }
 
-void PhysicsSystem::render()
+void PhysicsSystem::render(const Camera& cam, const Matrix4D& projection, const Vector4D& lightPos)
 {
+    rBodies[rBodies.size() - 1]->render(cam, projection, lightPos);
+    for (int i = 0; i < rBodies.size() - 1; i++){
+        rBodies[i]->render(cam, projection, lightPos);
+    }
 }
 
 void PhysicsSystem::addConstraint(const GraphicsNode &constraint)

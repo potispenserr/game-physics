@@ -14,9 +14,9 @@ RigidBodyVolume::~RigidBodyVolume()
 {
 }
 
-void RigidBodyVolume::render()
+void RigidBodyVolume::render(const Camera& cam, const Matrix4D& projection, const Vector4D& lightPos)
 {
-
+    this->gn.draw(cam, projection, lightPos);
 }
 
 void RigidBodyVolume::update(float deltaTime)
@@ -36,7 +36,14 @@ void RigidBodyVolume::applyForces()
 
 void RigidBodyVolume::synchCollisionVolumes()
 {
-    gn.AABBCenter = position;
+    if(gn.AABBCenter == position){
+        return;
+    }
+    
+    std::cout << "new position " << position.x() << " " << position.y() << " " << position.z() << "\n"; 
+    
+    gn.setTransform(Matrix4D::translation(position));
+    
 }
 
 void RigidBodyVolume::addLinearImpulse(const Vector4D &impulse)

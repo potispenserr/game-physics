@@ -101,7 +101,7 @@ void CollisionManifold::SATOnAABBs(const GraphicsNode &gn, const GraphicsNode &g
 			continue;
 		}
 		if(!overlapingOnAxis(gn, gn2, testAxis[i], resultantPenDepth, negativePenetration)){
-			std::cout << "no collision" << "\n";
+			//std::cout << "no collision" << "\n";
 			return;
 		}
 		if(resultantPenDepth <= 0.0f){

@@ -15,6 +15,7 @@
 #include "plane.h"
 #include "ray.h"
 
+
 // HackFIX1337boi
 #ifndef strncpy_s
 
@@ -130,7 +131,7 @@ namespace Example
 
 		projection = projection.perspective(radFov, 800.0f / 600.0f, 0.1f, 100.0f);
 
-		cam.camPos = Vector4D(0.0f, 0.0f, 3.0f);
+		cam.camPos = Vector4D(0.0f, 0.0f, 20.0f);
 		cam.camTarget = Vector4D(0.0f, 0.0f, 0.0f);
 		cam.camFront = Vector4D(0.0f, 0.0f, -1.0f);
 		cam.camUp = Vector4D(0.0f, 1.0f, 0.0f);
@@ -171,12 +172,24 @@ namespace Example
 		//gn.setNormalMap(normalMapPtr);
 		gn.initTexture("./resources/container45.jpg");
 		gn.setTransform(Matrix4D());
+		gn.AABBRenderState = true;
 
 		gn2.setMesh(objectMesh);
 		gn2.setShader(lightShader);
 		gn2.setAABBShader(rayShader);
 		gn2.setTexture(texPtr);
 		gn2.setTransform(Matrix4D());
+		gn2.AABBRenderState = true;
+
+		GraphicsNode gn3;
+		gn3.setMesh(objectMesh);
+		gn3.setShader(lightShader);
+		gn3.setAABBShader(rayShader);
+		gn3.setTexture(texPtr);
+		gn3.initTexture("./resources/container45.jpg");
+		gn3.setTransform(Matrix4D());
+		gn3.AABBRenderState = true;
+
 
 		//Matrix4D gnTransform = Matrix4D::scale(Vector4D(0.5, 0.5, 0.5));
 		Matrix4D gnTransform = gnTransform * Matrix4D::translation(Vector4D(2.0f, 0.0f, 0.0f));
@@ -186,9 +199,13 @@ namespace Example
 		Matrix4D gn2Transform = Matrix4D::translation(Vector4D(2.0f, 1.0f, 1.5f));
 		gn2.setTransform(gn2Transform);
 
-		std::vector<GraphicsNode> gnList;
+		gnTransform = Matrix4D::scale(Vector4D(5.0f, 1.0f, 5.0f)) * Matrix4D::translation(Vector4D(0.0f, -2.0f, 0.0f));
+		gn3.setTransform(gnTransform);
+
+		
 		gnList.push_back(gn);
 		gnList.push_back(gn2);
+		gnList.push_back(gn3);
 
 		std::cout << "GN1 Max:" << gnList[0].maxBounds.x() << " " << gnList[0].maxBounds.y() << " " << gnList[0].maxBounds.z() << "\n";
 		std::cout << "GN2 Max:" << gnList[1].maxBounds.x() << " " << gnList[1].maxBounds.y() << " " << gnList[1].maxBounds.z() << "\n";
@@ -260,7 +277,41 @@ namespace Example
 		CollisionManifold collisionResults;
 
 		bool AABBRenderState = true;
+
+
 		
+		// bodyVolumes.resize(3);
+
+		// bodyVolumes[0].type = RIGIDBODY_TYPE_BOX;
+		// bodyVolumes[0].position = Vector4D(-0.5f, 2.0, 0.3f);
+		// bodyVolumes[0].mass = 1.0f;
+		// bodyVolumes[0].gn = gnList[0];
+
+		// bodyVolumes[1].type = RIGIDBODY_TYPE_BOX;
+		// bodyVolumes[1].position = Vector4D(-0.5f, 8.0, 0.3f);
+		// bodyVolumes[1].mass = 6.0f;
+		// bodyVolumes[1].gn = gnList[1];
+
+		// //ground box
+		// bodyVolumes[2].type = RIGIDBODY_TYPE_BOX;
+		// bodyVolumes[2].position = Vector4D(0.0f, -2.0f, 0.0f);
+		// bodyVolumes[2].mass = 0.0f;
+		// bodyVolumes[2].gn = gnList[2];
+
+		// // RigidBodyVolume ground = RigidBodyVolume(RIGIDBODY_TYPE_BOX);
+		// // ground.position = Vector4D(0.0f, -2.0f, 0.0f);
+		// // ground.mass = 0.0f;
+		// // ground.gn = gnList[2];
+		// // ground.synchCollisionVolumes();
+
+		// for (int i = 0; i < bodyVolumes.size(); i++)
+		// {
+		// 	bodyVolumes[i].synchCollisionVolumes();
+		// 	physics.addRigidBody(&bodyVolumes[i]);
+		// }
+		//physics.addRigidBody(&ground);
+
+		setupBodies();
 
 		//render loop
 		while (this->window->IsOpen())
@@ -278,39 +329,41 @@ namespace Example
 
 			this->renderUI(squareHit, hitResults, AABBRenderState, collisionResults);
 
-			for(int i = 1; i < gnList.size(); i++){
-				// check if collisions are happening on the AABBs
-				if(gnList[i - 1].maxBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].maxBounds.x() < gnList[i].maxBounds.x() ||
-					gnList[i - 1].minBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].minBounds.x() < gnList[i].maxBounds.x() ||
-					gnList[i - 1].maxBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].maxBounds.y() < gnList[i].maxBounds.y() ||
-					gnList[i - 1].minBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].minBounds.y() < gnList[i].maxBounds.y() ||
-					gnList[i - 1].maxBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].maxBounds.z() < gnList[i].maxBounds.z() ||
-					gnList[i - 1].minBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].minBounds.z() < gnList[i].maxBounds.z())
-				{
-					collisionList.push_back(gnList[i - 1]);
-					collisionList.push_back(gnList[i]);
-					//std::cout << "Collision maybe" << "\n";
-					collisionResults.SATOnAABBs(gnList[i - 1], gnList[i]);
-					//std::cout << "Collision on AABBS is " << collisionResults.isColliding << " frfr no cap" << "\n";
-					if(collisionResults.isColliding == true){
-						gnList[i - 1].setAABBColor(Vector4D(1.0f, 0.0f, 0.0f));
-						gnList[i].setAABBColor(Vector4D(1.0f, 0.0f, 0.0f));
+			physics.update(deltaTime);
 
-					}
-					else {
-						gnList[i - 1].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
-						gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
+			// for(int i = 1; i < gnList.size(); i++){
+			// 	// check if collisions are happening on the AABBs
+			// 	if(gnList[i - 1].maxBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].maxBounds.x() < gnList[i].maxBounds.x() ||
+			// 		gnList[i - 1].minBounds.x() > gnList[i].minBounds.x() && gnList[i - 1].minBounds.x() < gnList[i].maxBounds.x() ||
+			// 		gnList[i - 1].maxBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].maxBounds.y() < gnList[i].maxBounds.y() ||
+			// 		gnList[i - 1].minBounds.y() > gnList[i].minBounds.y() && gnList[i - 1].minBounds.y() < gnList[i].maxBounds.y() ||
+			// 		gnList[i - 1].maxBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].maxBounds.z() < gnList[i].maxBounds.z() ||
+			// 		gnList[i - 1].minBounds.z() > gnList[i].minBounds.z() && gnList[i - 1].minBounds.z() < gnList[i].maxBounds.z())
+			// 	{
+			// 		collisionList.push_back(gnList[i - 1]);
+			// 		collisionList.push_back(gnList[i]);
+			// 		//std::cout << "Collision maybe" << "\n";
+			// 		collisionResults.SATOnAABBs(gnList[i - 1], gnList[i]);
+			// 		//std::cout << "Collision on AABBS is " << collisionResults.isColliding << " frfr no cap" << "\n";
+			// 		if(collisionResults.isColliding == true){
+			// 			gnList[i - 1].setAABBColor(Vector4D(1.0f, 0.0f, 0.0f));
+			// 			gnList[i].setAABBColor(Vector4D(1.0f, 0.0f, 0.0f));
 
-					}
+			// 		}
+			// 		else {
+			// 			gnList[i - 1].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
+			// 			gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
+
+			// 		}
 					
-				}
-				else{
-					gnList[i - 1].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
-					gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
-				}
-			}
+			// 	}
+			// 	else{
+			// 		gnList[i - 1].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
+			// 		gnList[i].setAABBColor(Vector4D(1.0f, 1.0f, 1.0f));
+			// 	}
+			// }
 
-			window->SetKeyPressFunction([this, &light, &gnList](int32 asciikey, int32 argb, int32 status, int32 mod)
+			window->SetKeyPressFunction([this, &light](int32 asciikey, int32 argb, int32 status, int32 mod)
 			{
 				//std::cout << "asciikey: " << asciikey << " argb: " << argb << " status: " << status << " mod: " << mod << "\n";
 
@@ -534,10 +587,17 @@ namespace Example
 				});
 			cam.setView();
 			light.updateLighting(cam, projection, lightCube);
-			for(GraphicsNode gNode : gnList){
-				gNode.draw(cam, projection, light.lightPos);
+			// for(GraphicsNode gNode : gnList){
+			// 	gNode.draw(cam, projection, light.lightPos);
 				
-			}
+			// }
+
+			physics.render(cam, projection, light.lightPos);
+			// bodyVolumes[2].gn.draw(cam, projection, light.lightPos);
+
+			// for (int i = 0; i < bodyVolumes.size() - 1; i++){
+			// 	bodyVolumes[i].gn.draw(cam, projection, light.lightPos);
+			// }
 			//gn.draw(cam, projection, light.lightPos);
 			lightCube.draw(cam, projection, light.lightPos);
 			//gn2.draw(cam, projection, light.lightPos);
@@ -567,103 +627,103 @@ namespace Example
 			}
 			
 			// draw intersection point cube
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
-			cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
-			Matrix4D newTrans = cubeTransform.translation(hitVisualizerPosition);
-			cubeTransform = cubeTransform * newTrans;
-			pointLightShader.get()->use();
-			pointLightShader.get()->setMat4(std::string("model"), cubeTransform);
-			pointLightShader.get()->setMat4(std::string("view"), cam.getView());
-			pointLightShader.get()->setMat4(std::string("projection"), projection);
-			glBindVertexArray(cubeVAO);
-        	glDrawArrays(GL_TRIANGLES, 0, 36);
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+			// glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+			// cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
+			// Matrix4D newTrans = cubeTransform.translation(hitVisualizerPosition);
+			// cubeTransform = cubeTransform * newTrans;
+			// pointLightShader.get()->use();
+			// pointLightShader.get()->setMat4(std::string("model"), cubeTransform);
+			// pointLightShader.get()->setMat4(std::string("view"), cam.getView());
+			// pointLightShader.get()->setMat4(std::string("projection"), projection);
+			// glBindVertexArray(cubeVAO);
+        	// glDrawArrays(GL_TRIANGLES, 0, 36);
+			// glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
 
-			if(collisionResults.isColliding == true){
-				Vector4D cubeColor = {1.0f, 1.0f, 1.0f};
-				for(int i = 0; i < collisionResults.contactPoints.size(); i++){
-					cubeTransform.reset();
-					cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
-					newTrans = cubeTransform.translation(collisionResults.contactPoints[i]);
-					cubeTransform = cubeTransform * newTrans;
-					//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
-					rayShader.get()->use();
-					rayShader.get()->setMat4(std::string("model"), cubeTransform);
-					rayShader.get()->setMat4(std::string("view"), cam.getView());
-					rayShader.get()->setMat4(std::string("projection"), projection);
-					rayShader.get()->setVec4(std::string("rayColor"), cubeColor);
+			// if(collisionResults.isColliding == true){
+			// 	Vector4D cubeColor = {1.0f, 1.0f, 1.0f};
+			// 	for(int i = 0; i < collisionResults.contactPoints.size(); i++){
+			// 		cubeTransform.reset();
+			// 		cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
+			// 		newTrans = cubeTransform.translation(collisionResults.contactPoints[i]);
+			// 		cubeTransform = cubeTransform * newTrans;
+			// 		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+			// 		rayShader.get()->use();
+			// 		rayShader.get()->setMat4(std::string("model"), cubeTransform);
+			// 		rayShader.get()->setMat4(std::string("view"), cam.getView());
+			// 		rayShader.get()->setMat4(std::string("projection"), projection);
+			// 		rayShader.get()->setVec4(std::string("rayColor"), cubeColor);
 
-					glBindVertexArray(cubeVAO);
-					glDrawArrays(GL_TRIANGLES, 0, 36);
-					glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
-					// glBegin(GL_POINTS);
-					// glVertex3f(collisionResults.contactPoints[i].x(), collisionResults.contactPoints[i].y(), collisionResults.contactPoints[i].z());
-					// glEnd();
+			// 		glBindVertexArray(cubeVAO);
+			// 		glDrawArrays(GL_TRIANGLES, 0, 36);
+			// 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+			// 		// glBegin(GL_POINTS);
+			// 		// glVertex3f(collisionResults.contactPoints[i].x(), collisionResults.contactPoints[i].y(), collisionResults.contactPoints[i].z());
+			// 		// glEnd();
 
-					Ray normalRay = {Vector4D(0.0f, 0.0f, 0.0f), collisionResults.collisionNormal * 5};
-					normalRay.rayColor = Vector4D(1.0f, 1.0f, 1.0f);
-					rayShader.get()->use();
-					rayShader.get()->setMat4(std::string("model"), rayTransform);
-					rayShader.get()->setMat4(std::string("view"), cam.getView());
-					rayShader.get()->setMat4(std::string("projection"), projection);
-					rayShader.get()->setVec4(std::string("rayColor"), normalRay.rayColor);
-					normalRay.draw();
+			// 		Ray normalRay = {Vector4D(0.0f, 0.0f, 0.0f), collisionResults.collisionNormal * 5};
+			// 		normalRay.rayColor = Vector4D(1.0f, 1.0f, 1.0f);
+			// 		rayShader.get()->use();
+			// 		rayShader.get()->setMat4(std::string("model"), rayTransform);
+			// 		rayShader.get()->setMat4(std::string("view"), cam.getView());
+			// 		rayShader.get()->setMat4(std::string("projection"), projection);
+			// 		rayShader.get()->setVec4(std::string("rayColor"), normalRay.rayColor);
+			// 		normalRay.draw();
 
-				}
-			}
+			// 	}
+			// }
 
-			//debug cubes
-			Vector4D cubeColor;
-			for(int i = 0; i < gnList.size(); i++){
-				for(int j = 0; j < 3; j++){
-					cubeTransform.reset();
-					cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
-					if(j == 0){
-						newTrans = cubeTransform.translation(gnList[i].minBounds);
-						cubeColor = {0.0f, 1.0f, 0.0f};	
-					}
-					else if (j == 1){
-						newTrans = cubeTransform.translation(gnList[i].maxBounds);
-						cubeColor = {0.0f, 0.0f, 1.0f};
-					}
-					else if (j == 2){
-						newTrans = cubeTransform.translation(gnList[i].AABBCenter);
-						cubeColor = {1.0f, 0.0f, 0.0f};
-					}
-					cubeTransform = cubeTransform * newTrans;
-					glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
-					rayShader.get()->use();
-					rayShader.get()->setMat4(std::string("model"), cubeTransform);
-					rayShader.get()->setMat4(std::string("view"), cam.getView());
-					rayShader.get()->setMat4(std::string("projection"), projection);
-					rayShader.get()->setVec4(std::string("rayColor"), cubeColor);
+			// //debug cubes
+			// Vector4D cubeColor;
+			// for(int i = 0; i < gnList.size(); i++){
+			// 	for(int j = 0; j < 3; j++){
+			// 		cubeTransform.reset();
+			// 		cubeTransform = Matrix4D::scale(Vector4D(0.1, 0.1, 0.1));
+			// 		if(j == 0){
+			// 			newTrans = cubeTransform.translation(gnList[i].minBounds);
+			// 			cubeColor = {0.0f, 1.0f, 0.0f};	
+			// 		}
+			// 		else if (j == 1){
+			// 			newTrans = cubeTransform.translation(gnList[i].maxBounds);
+			// 			cubeColor = {0.0f, 0.0f, 1.0f};
+			// 		}
+			// 		else if (j == 2){
+			// 			newTrans = cubeTransform.translation(gnList[i].AABBCenter);
+			// 			cubeColor = {1.0f, 0.0f, 0.0f};
+			// 		}
+			// 		cubeTransform = cubeTransform * newTrans;
+			// 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+			// 		rayShader.get()->use();
+			// 		rayShader.get()->setMat4(std::string("model"), cubeTransform);
+			// 		rayShader.get()->setMat4(std::string("view"), cam.getView());
+			// 		rayShader.get()->setMat4(std::string("projection"), projection);
+			// 		rayShader.get()->setVec4(std::string("rayColor"), cubeColor);
 	
-					glBindVertexArray(cubeVAO);
-					glDrawArrays(GL_TRIANGLES, 0, 36);
-					glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+			// 		glBindVertexArray(cubeVAO);
+			// 		glDrawArrays(GL_TRIANGLES, 0, 36);
+			// 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
 	
-				}
+			// 	}
 
-			}
+			// }
 
 			//debug edges
-			rayShader.get()->use();
-			rayShader.get()->setMat4(std::string("view"), cam.getView());
-			rayShader.get()->setMat4(std::string("projection"), projection);
-			rayShader.get()->setVec4(std::string("rayColor"), Vector4D(0.75f, 0.1f, 0.36f));
-			for(int i = 0; i < gnList.size(); i++){
-				rayShader.get()->setMat4(std::string("model"), Matrix4D());
-				glBegin(GL_LINES);
-				std::vector<Line> edges = collisionResults.getEdges(gnList[i]);
-				for(int j = 0; j < edges.size(); j++){
-					Vector4D p1 = edges[j].start;
-					Vector4D p2 = edges[j].end;
-					glVertex3f(p1.x(), p1.y(), p1.z());
-					glVertex3f(p2.x(), p2.y(), p2.z());
-				}
-				glEnd();
+			// rayShader.get()->use();
+			// rayShader.get()->setMat4(std::string("view"), cam.getView());
+			// rayShader.get()->setMat4(std::string("projection"), projection);
+			// rayShader.get()->setVec4(std::string("rayColor"), Vector4D(0.75f, 0.1f, 0.36f));
+			// for(int i = 0; i < gnList.size(); i++){
+			// 	rayShader.get()->setMat4(std::string("model"), Matrix4D());
+			// 	glBegin(GL_LINES);
+			// 	std::vector<Line> edges = collisionResults.getEdges(gnList[i]);
+			// 	for(int j = 0; j < edges.size(); j++){
+			// 		Vector4D p1 = edges[j].start;
+			// 		Vector4D p2 = edges[j].end;
+			// 		glVertex3f(p1.x(), p1.y(), p1.z());
+			// 		glVertex3f(p2.x(), p2.y(), p2.z());
+			// 	}
+			// 	glEnd();
 
-			}
+			// }
 
 
 
@@ -745,6 +805,11 @@ namespace Example
 			}
 			ImGui::SameLine();
             ImGui::Text("AABB Rendering = %d", AABBRenderState);
+
+			ImGui::NewLine();
+			if(ImGui::Button("Reset Position")) {
+				setupBodies();
+			}
 			
 
             ImGui::Text("Average Frame Time %.3f ms/frame", 1000.0f / ImGui::GetIO().Framerate);
@@ -832,6 +897,45 @@ void ExampleApp::setupCube(unsigned int& VBO, unsigned int& VAO)
 
 void ExampleApp::renderCube()
 {
+}
+
+void ExampleApp::setupBodies() {
+	physics.clearConstraints();
+	physics.clearRigidbodies();
+
+	bodyVolumes.clear();
+	bodyVolumes.resize(3);
+
+	bodyVolumes[0].type = RIGIDBODY_TYPE_BOX;
+	bodyVolumes[0].position = Vector4D(-0.5f, 2.0, 0.3f);
+	bodyVolumes[0].mass = 1.0f;
+	bodyVolumes[0].gn = gnList[0];
+
+	bodyVolumes[1].type = RIGIDBODY_TYPE_BOX;
+	bodyVolumes[1].position = Vector4D(-0.5f, 5.0, 0.3f);
+	bodyVolumes[1].mass = 7.0f;
+	bodyVolumes[1].gn = gnList[1];
+
+	// ground box
+	bodyVolumes[2].type = RIGIDBODY_TYPE_BOX;
+	bodyVolumes[2].position = Vector4D(0.0f, -2.0f, 0.0f);
+	bodyVolumes[2].mass = 0.0f;
+	bodyVolumes[2].gn = gnList[2];
+
+	// RigidBodyVolume ground = RigidBodyVolume(RIGIDBODY_TYPE_BOX);
+	// ground.position = Vector4D(0.0f, -2.0f, 0.0f);
+	// ground.mass = 0.0f;
+	// ground.gn = gnList[2];
+	
+	
+	for (int i = 0; i < bodyVolumes.size(); ++i)
+	{
+		bodyVolumes[i].synchCollisionVolumes();
+		physics.addRigidBody(&bodyVolumes[i]);
+	}
+	//ground.synchCollisionVolumes();
+	//physics.addRigidBody(&ground);
+
 }
 
 

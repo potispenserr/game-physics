@@ -18,6 +18,8 @@
 #include "LightNode.h"
 #include "ray.h"
 #include "CollisionManifold.h"
+#include "PhysicsSystem.h"
+#include "RigidBodyVolume.h"
 
 
 namespace Example
@@ -44,6 +46,8 @@ public:
 
 	void renderCube();
 
+	void setupBodies();
+
 
 	GLuint program;
 	GLuint vertexShader;
@@ -55,12 +59,16 @@ public:
 	TextureResource tex2;
 	GraphicsNode gn;
 	GraphicsNode gn2;
+	std::vector<GraphicsNode> gnList;
 	Camera cam;
 	float deltaTime;
 	float lastFrame;
 	float currentFrame;
 	int mousepress;
 	int mousestatus;
+	PhysicsSystem physics;
+	std::vector<RigidBodyVolume> bodyVolumes;
+
 
 	Matrix4D projection;
 	int width = 0;
