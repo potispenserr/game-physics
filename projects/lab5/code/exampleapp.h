@@ -38,7 +38,7 @@ public:
 	void Run();
 	private:
 	
-	void renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults, bool& AABBRenderState, const CollisionManifold& cm);
+	void renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults, std::vector<GraphicsNode>& gnList, const CollisionManifold& cm);
 
 	void renderNano(NVGcontext * vg);
 
@@ -68,6 +68,7 @@ public:
 	int mousestatus;
 	PhysicsSystem physics;
 	std::vector<RigidBodyVolume> bodyVolumes;
+	bool AABBRenderState = true;
 
 
 	Matrix4D projection;

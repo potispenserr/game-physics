@@ -199,7 +199,7 @@ namespace Example
 		Matrix4D gn2Transform = Matrix4D::translation(Vector4D(2.0f, 1.0f, 1.5f));
 		gn2.setTransform(gn2Transform);
 
-		gnTransform = Matrix4D::scale(Vector4D(5.0f, 1.0f, 5.0f)) * Matrix4D::translation(Vector4D(0.0f, -2.0f, 0.0f));
+		gnTransform = Matrix4D::scale(Vector4D(5.0f, 5.0f, 5.0f)) * Matrix4D::translation(Vector4D(0.0f, -10.0f, 0.0f));
 		gn3.setTransform(gnTransform);
 
 		
@@ -276,9 +276,6 @@ namespace Example
 
 		CollisionManifold collisionResults;
 
-		bool AABBRenderState = true;
-
-
 		
 		// bodyVolumes.resize(3);
 
@@ -311,6 +308,7 @@ namespace Example
 		// }
 		//physics.addRigidBody(&ground);
 
+		//sets up everything needed for the cubes
 		setupBodies();
 
 		//render loop
@@ -323,11 +321,7 @@ namespace Example
 			deltaTime = currentFrame - lastFrame;	
 			lastFrame = currentFrame;
 
-			for(int i = 0; i < gnList.size(); i++){
-				gnList[i].AABBRenderState = AABBRenderState;
-			}
-
-			this->renderUI(squareHit, hitResults, AABBRenderState, collisionResults);
+			this->renderUI(squareHit, hitResults, gnList, collisionResults);
 
 			physics.update(deltaTime);
 
@@ -751,7 +745,7 @@ namespace Example
 		glfwTerminate();
 	}
 
-    void ExampleApp::renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults, bool& AABBRenderState, const CollisionManifold& cm)
+    void ExampleApp::renderUI(Vector4D& hitPoint, std::map<std::string, Vector4D>& hitResults, std::vector<GraphicsNode>& gnList, const CollisionManifold& cm)
     {
         ImGui_ImplGlfwGL3_NewFrame();
 		bool show_demo_window = true;
@@ -797,9 +791,18 @@ namespace Example
 
 			if (ImGui::Button("Render AABB")){
                 if(AABBRenderState == true){
+					for (int i = 0; i < gnList.size(); i++) {
+						gnList[i].AABBRenderState = false;
+						
+					}
+					
 					AABBRenderState = false;
 				}
 				else {
+					for (int i = 0; i < gnList.size(); i++) {
+						gnList[i].AABBRenderState = true;
+						
+					}
 					AABBRenderState = true;
 				}
 			}
@@ -911,6 +914,7 @@ void ExampleApp::setupBodies() {
 	bodyVolumes[0].mass = 1.0f;
 	bodyVolumes[0].gn = gnList[0];
 
+
 	bodyVolumes[1].type = RIGIDBODY_TYPE_BOX;
 	bodyVolumes[1].position = Vector4D(-0.5f, 5.0, 0.3f);
 	bodyVolumes[1].mass = 7.0f;
@@ -918,7 +922,7 @@ void ExampleApp::setupBodies() {
 
 	// ground box
 	bodyVolumes[2].type = RIGIDBODY_TYPE_BOX;
-	bodyVolumes[2].position = Vector4D(0.0f, -2.0f, 0.0f);
+	bodyVolumes[2].position = Vector4D(0.0f, -10.0f, 0.0f);
 	bodyVolumes[2].mass = 0.0f;
 	bodyVolumes[2].gn = gnList[2];
 

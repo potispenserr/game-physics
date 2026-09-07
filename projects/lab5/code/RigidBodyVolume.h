@@ -14,11 +14,12 @@ public:
     ~RigidBodyVolume();
 
     void render(const Camera& cam, const Matrix4D& projection, const Vector4D& lightPos);
-    void update(float deltaTime);
+    void update(const float deltaTime);
     void applyForces();
     void synchCollisionVolumes();
     void addLinearImpulse(const Vector4D& impulse);
-    
+    void updateAABB(const float r, const float g, const float b);
+    void updateAABB(const bool AABBRender);
     
     float inverseMass();
     

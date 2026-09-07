@@ -51,6 +51,15 @@ void RigidBodyVolume::addLinearImpulse(const Vector4D &impulse)
     velocity = velocity + impulse;
 }
 
+void RigidBodyVolume::updateAABB(float r, float g, float b)
+{
+    gn.setAABBColor(Vector4D(r, g, b));
+}
+
+void RigidBodyVolume::updateAABB(const bool AABBRender)
+{
+    gn.AABBRenderState = AABBRender;
+}
 
 float RigidBodyVolume::inverseMass()
 {
@@ -100,7 +109,16 @@ CollisionManifold findCollisions(RigidBodyVolume &r1, RigidBodyVolume &r2)
     CollisionManifold result;
     if(r1.type == RIGIDBODY_TYPE_BOX) {
         if(r2.type == RIGIDBODY_TYPE_BOX) {
-            result.SATOnAABBs(r1.gn, r2.gn);
+            if(r1.gn.maxBounds.x() > r2.gn.minBounds.x() && r1.gn.maxBounds.x() < r2.gn.maxBounds.x() ||
+					r1.gn.minBounds.x() > r2.gn.minBounds.x() && r1.gn.minBounds.x() < r2.gn.maxBounds.x() ||
+					r1.gn.maxBounds.y() > r2.gn.minBounds.y() && r1.gn.maxBounds.y() < r2.gn.maxBounds.y() ||
+					r1.gn.minBounds.y() > r2.gn.minBounds.y() && r1.gn.minBounds.y() < r2.gn.maxBounds.y() ||
+					r1.gn.maxBounds.z() > r2.gn.minBounds.z() && r1.gn.maxBounds.z() < r2.gn.maxBounds.z() ||
+					r1.gn.minBounds.z() > r2.gn.minBounds.z() && r1.gn.minBounds.z() < r2.gn.maxBounds.z())
+			{
+                result.SATOnAABBs(r1.gn, r2.gn);
+
+            }
         }
     }
     return result;

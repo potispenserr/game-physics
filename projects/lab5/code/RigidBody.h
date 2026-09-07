@@ -11,10 +11,10 @@ public:
     RigidBody();
     virtual ~RigidBody();
 
-    virtual void update(float deltaTime) {}
+    virtual void update(const float deltaTime) {}
     virtual void render(const Camera& cam, const Matrix4D& projection, const Vector4D& lightPos) {}
     virtual void applyForces() {}
-    virtual void solveConstraints(const std::vector<GraphicsNode>& constraints) {}
+    virtual void updateAABB(const float r, const float g, const float b) {}
 
     bool hasVolume();
 

@@ -91,9 +91,6 @@ void PhysicsSystem::update(float deltaTime)
 
     }
     
-    for (int i = 0; i < rBodies.size(); ++i){ 
-        rBodies[i]->solveConstraints(constraints);
-    }
 
 }
 
